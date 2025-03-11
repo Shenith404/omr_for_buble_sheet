@@ -45,10 +45,10 @@ if biggestContour.size !=0:
 
 
     ############################ SAVE THE IMAGE BLOCKS ############################
-    imageName='test_12'
-    for i in range(len(boxes)):
+    # imageName='test_12'
+    # for i in range(len(boxes)):
 
-        utils.saveImages(utils.getAnswerBlocks(boxes[i]),imageName,i)
+    #     utils.saveImages(utils.getAnswerBlocks(boxes[i]),imageName,i)
 
     
      
