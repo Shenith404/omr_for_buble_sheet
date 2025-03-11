@@ -4,7 +4,7 @@ import utils
 import os
 
 #constants
-path ='test_12.jpeg'
+path ='test_10.jpeg'
 widhtImg = 1025
 hightImg = 760
 
@@ -40,6 +40,34 @@ if biggestContour.size !=0:
 
     #get answers boxes
     boxes =utils.verticalSplitBoxes(imgThresh)
+
+
+    answerSheet = []  # List to store results
+
+    for i in range(len(boxes)):
+        answerBoxes = utils.getAnswerBlocks(boxes[i])
+
+        # Ignore indices 0, 1, and 6
+        answerBoxes = answerBoxes[2:5]
+
+        # Get pixel values for each answer box
+        pixelValues = [cv2.countNonZero(box) for box in answerBoxes]
+
+        # Find the index of the maximum pixel value
+        maxIndex = pixelValues.index(max(pixelValues))
+        if(pixelValues[maxIndex] < 550):
+            answerSheet.append({"box_index": i+1, "answer": -1})
+        else:
+            # Store the result correctly as a dictionary (not a set!)
+            answerSheet.append({"box_index": i+1, "answer": maxIndex+1})
+
+    print(answerSheet)  # Debug output
+
+
+
+      
+
+
 
 
 
