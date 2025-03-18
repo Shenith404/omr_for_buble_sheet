@@ -143,3 +143,19 @@ def saveImages(answerBlocks, ImageName, boxNumber):
             file_path = os.path.join(save_path_cross_Images, filename)
 
         cv2.imwrite(file_path, block)
+
+
+def showAnswers(img,answerIndexes):
+    secW = int(img.shape[1] / 35)
+    secH = int(img.shape[0] / 10)
+    print(secH,secW,img.shape)
+
+    for x in range(0,5):
+
+        for y in range(0,10):
+            myAns = answerIndexes[x*10+y]
+            cx=(myAns*secW +7*x*secW)+secW//2
+            cy=(y*secH)+secH//2
+            cv2.rectangle(img,(cx-10,cy-10),(cx+10,cy+10),(0,255,0),cv2.FILLED)
+
+    return img
