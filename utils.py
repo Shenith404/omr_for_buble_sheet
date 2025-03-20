@@ -121,7 +121,7 @@ def getAnswerBlocks(img):
     return boxes
 
 
-#safe images in new folder
+#save images in new folder
 def saveImages(answerBlocks, ImageName, boxNumber):
     # Ensure directories exist
     save_path_cross_Images = r"E:\University\fyp\mcq_test_1\cross_Images"
@@ -145,6 +145,7 @@ def saveImages(answerBlocks, ImageName, boxNumber):
         cv2.imwrite(file_path, block)
 
 
+#show answers on the image
 def showAnswers(img,answerIndexes):
     secW = int(img.shape[1] / 35)
     secH = int(img.shape[0] / 10)
@@ -154,8 +155,9 @@ def showAnswers(img,answerIndexes):
 
         for y in range(0,10):
             myAns = answerIndexes[x*10+y]
-            cx=(myAns*secW +7*x*secW)+secW//2
-            cy=(y*secH)+secH//2
-            cv2.rectangle(img,(cx-10,cy-10),(cx+10,cy+10),(0,255,0),cv2.FILLED)
+            if myAns != -1:
+                cx=(myAns*secW +7*x*secW)+secW//2
+                cy=(y*secH)+secH//2
+                cv2.rectangle(img,(cx-10,cy-10),(cx+10,cy+10),(0,255,0),cv2.FILLED)
 
     return img
