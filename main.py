@@ -61,7 +61,7 @@ try:
             answerBoxes = utils.getAnswerBlocks(boxes[i])
 
             # Ignore indices 0, 1, and 6
-            answerBoxes = answerBoxes[2:5]
+            answerBoxes = answerBoxes[2:6]
             #get answer labels
             answerLabels=[]
             for j in range(len(answerBoxes)):
