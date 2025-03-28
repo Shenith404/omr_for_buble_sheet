@@ -18,7 +18,7 @@ img2 = cv2.imread(IMG_PATH, cv2.IMREAD_GRAYSCALE)
 # Resize image to match model input size (64x64)
 TARGET_SIZE = (64, 64)
 # Class labels
-class_labels = ["Cross_Removed_Bubble", "Crossed_Bubble", "Empty_Bubble", "Other", "Shaded_Bubble"]
+class_labels = ["Crossed_Bubble", "Empty_Bubble", "Other", "Shaded_Bubble"]
 
 def classify_bubble(image):
     img = cv2.resize(image, TARGET_SIZE)
