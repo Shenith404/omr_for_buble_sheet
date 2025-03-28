@@ -9,7 +9,6 @@ model = load_model(MODEL_PATH)
 
 # Class labels
 class_labels = [
-    "Cross_Removed_Bubble", 
     "Crossed_Bubble", 
     "Empty_Bubble", 
     "Other", 

@@ -69,7 +69,7 @@ try:
                 if cv2.countNonZero(answerBoxes[j]) > 0:
                     label, confidence = model.classify_bubble(answerBoxes[j])
                     answerWithModels.append({"box_index": i+1, "answer": j+2, "label": label})
-                    if label=="Crossed_Bubble" or label=="Cross_Removed_Bubble":
+                    if label=="Crossed_Bubble":
                         answerLabels.append(j+2)
                         
             #if answerlabels have only one crossed bubble then add the index of the crossed bubble
