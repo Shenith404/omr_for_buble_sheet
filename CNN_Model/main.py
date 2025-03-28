@@ -159,7 +159,7 @@ model = Sequential([
     Flatten(),
     Dense(512, activation='relu'),
     Dropout(0.5),
-    Dense(5, activation='softmax')  # 5 output classes
+    Dense(4, activation='softmax')  # 4 output classes
 ])
 
 # Compile Model
