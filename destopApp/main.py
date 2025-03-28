@@ -1,20 +1,17 @@
+import os
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disable oneDNN warnings
+
 import sys
 from PySide6.QtWidgets import QApplication
 from ui.main_window import MainWindow
 
 def main():
-    """Entry point for the OMR Scanner application"""
-    # Create the Qt application
     app = QApplication(sys.argv)
+    app.setStyle("Fusion")  # Consistent styling
     
-    # Apply basic styling (optional)
-    app.setStyle("Fusion")
-    
-    # Create and show the main window
     window = MainWindow()
     window.show()
     
-    # Start the Qt event loop
     sys.exit(app.exec())
 
 if __name__ == "__main__":
