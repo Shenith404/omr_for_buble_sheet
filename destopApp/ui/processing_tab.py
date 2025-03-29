@@ -135,7 +135,7 @@ class OMRProcessor(QObject):
             for j, block in enumerate(answer_blocks):
                 if cv2.countNonZero(block) > 0:
                     label, _ = model.classify_bubble(block)
-                    if label in ["Crossed_Bubble", "Cross_Removed_Bubble"]:
+                    if label == "Crossed_Bubble":
                         marked.append(j+2)  # 1-based index
             
             answers.append(marked[0] if len(marked) == 1 else -1)
