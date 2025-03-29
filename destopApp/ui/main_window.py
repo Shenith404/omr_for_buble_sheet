@@ -4,7 +4,7 @@ import cv2
 from PySide6.QtWidgets import (
     QMainWindow, QTabWidget, QStatusBar, 
     QMessageBox, QVBoxLayout, QWidget, 
-    QMenuBar, QMenu
+    QMenuBar, QMenu, QFileDialog
 )
 from PySide6.QtCore import Qt, Signal
 from ui.project_tab import ProjectTab
@@ -106,26 +106,7 @@ class MainWindow(QMainWindow):
 
     def handle_tab_changed(self, index):
         """Strictly enforce project requirements before allowing processing tab access"""
-        # if index == 1:  # Processing tab selected
-        #     if not self.current_project:
-        #         QMessageBox.warning(
-        #             self,
-        #             "No Project",
-        #             "Please create or open a project first",
-        #             QMessageBox.Ok
-        #         )
-        #         self.tab_widget.setCurrentIndex(0)
-        #         return
             
-        #     if not self.current_images:
-        #         QMessageBox.warning(
-        #             self,
-        #             "No Images",
-        #             "Please add images to the project before processing",
-        #             QMessageBox.Ok
-        #         )
-        #         self.tab_widget.setCurrentIndex(0)
-        #         return
         pass
 
     def open_project(self):

@@ -4,8 +4,22 @@ from tensorflow.keras.preprocessing.image import img_to_array
 import cv2
 
 # Load trained model
-MODEL_PATH = "bubble_cnn_model.keras"
-model = load_model(MODEL_PATH)
+# model.py
+import os
+import sys
+
+def get_model_path():
+    # For development
+    if getattr(sys, 'frozen', False):
+        # Running as compiled executable
+        base_path = sys._MEIPASS
+    else:
+        # Running as script
+        base_path = os.path.dirname(__file__)
+    
+    return os.path.join(base_path, "models", "bubble_cnn_model.keras")
+
+model = load_model(get_model_path())
 
 # Class labels
 class_labels = [

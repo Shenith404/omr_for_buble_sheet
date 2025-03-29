@@ -37,6 +37,7 @@ class OMRProcessor(QObject):
         self.widthImg = 1025  # Standard OMR sheet width
         self.heightImg = 760  # Standard OMR sheet height
         self.batch_size = 50  # Process images in batches to manage memory
+        self.dummy_answer = [0] * 50  # Placeholder for dummy answers
 
     def process_all(self):
         """Process all images with accurate progress tracking"""
@@ -101,12 +102,12 @@ class OMRProcessor(QObject):
         rects = utils.rectContour(contours)
         
         if not rects:
-            raise ValueError("No answer sheet detected")
+            return self.dummy_answer, img
 
         # Step 3: Perspective Transform with error checking
         biggest = utils.getCornerPoints(rects[0])
         if biggest.size == 0:
-            raise ValueError("Could not detect corners")
+            return self.dummy_answer, img
             
         biggest = utils.reorder(biggest)
         pts1 = np.float32(biggest)
@@ -117,6 +118,9 @@ class OMRProcessor(QObject):
         # Step 4: Adaptive Thresholding for better robustness
         warped_gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
         thresh = cv2.threshold(warped_gray, 170, 255, cv2.THRESH_BINARY_INV)[1]
+
+        totalPixelSize =cv2.countNonZero(thresh)
+        print("Total Pixel Size: ",totalPixelSize)
 
         if self._cancel_requested:
             raise RuntimeError("Processing cancelled")

@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QPixmap, QImage, QIcon, QFont, QColor
 from PySide6.QtCore import Qt, Signal, QTimer, QSize
+import utils  # Assuming utils is a module with required functions
 
 class ProjectTab(QWidget):
     project_created = Signal(str)
@@ -209,7 +210,29 @@ class ProjectTab(QWidget):
 
     def validate_image(self, image):
         """Validate the captured image before saving"""
-        # For now, just return True - implement actual validation logic later
+        # Step 1: Preprocessing with optimized operations
+
+
+        try:
+            img = cv2.resize(image, (1025, 760))
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            blur = cv2.GaussianBlur(gray, (5, 5), 1)
+            edges = cv2.Canny(blur, 10, 50)
+            
+
+            # Step 2: Contour Detection with area filtering
+            contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+            rects = utils.rectContour(contours)
+        except:
+            return False
+        
+        if not rects:
+            return False
+
+        # Step 3: Perspective Transform with error checking
+        biggest = utils.getCornerPoints(rects[0])
+        if biggest.size == 0:
+            return False
         return True
 
     def select_location(self):
@@ -292,6 +315,7 @@ class ProjectTab(QWidget):
             
             self.source_group.setEnabled(True)
             self.btn_link.setEnabled(True)
+            self.btn_add.setEnabled(True)
             self.status_label.setText(f"Project loaded: {project_path}")
             self.project_opened.emit(project_path)
 
@@ -387,11 +411,8 @@ class ProjectTab(QWidget):
 
             self.captured_frame = self.current_frame.copy()
             
-            # Validate before proceeding
-            if not self.validate_image(self.captured_frame):
-                QMessageBox.warning(self, "Validation Error", "Image validation failed")
-                return
-
+           
+          
             # Directly save without preview
             self.save_captured_image()
 
@@ -434,6 +455,10 @@ class ProjectTab(QWidget):
 
     def save_captured_image(self):
         """Save the captured image to the project"""
+        if not self.validate_image(self.captured_frame):
+            QMessageBox.warning(self, "Validation Error", "Image validation failed")
+            return
+
         try:
             if self.captured_frame is None:
                 QMessageBox.warning(self, "Save Error", "No image to save")
@@ -465,6 +490,7 @@ class ProjectTab(QWidget):
 
     def add_images(self):
         """Add images by copying them to the project"""
+        print("Adding images...")
         try:
             if not self.current_project:
                 QMessageBox.warning(self, "Error", "No project loaded")
