@@ -3,6 +3,7 @@ import time
 import uuid
 import numpy as np
 import cv2
+import pytesseract
 
 def stackImages(imgArray,scale,lables=[]):
     rows = len(imgArray)
@@ -161,3 +162,17 @@ def showAnswers(img,answerIndexes):
                 cv2.rectangle(img,(cx-10,cy-10),(cx+10,cy+10),(0,255,0),cv2.FILLED)
 
     return img
+
+# def extract_text_from_box(img, contour):
+#     contour = reorder(contour)
+#     pt1 = np.float32(contour)
+#     pt2 = np.float32([[0, 0], [350, 0], [0, 100], [350, 100]])
+#     matrix = cv2.getPerspectiveTransform(pt1, pt2)
+#     imgWarp = cv2.warpPerspective(img, matrix, (350, 100))
+
+#     imgGray = cv2.cvtColor(imgWarp, cv2.COLOR_BGR2GRAY)
+#     _, imgThresh = cv2.threshold(imgGray, 150, 255, cv2.THRESH_BINARY)
+
+#     config = '--psm 6'  # Assume a single uniform block of text
+#     text = pytesseract.image_to_string(imgThresh, config=config)
+#     return text.strip(), imgWarp

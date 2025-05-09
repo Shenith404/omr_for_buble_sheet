@@ -5,7 +5,7 @@ import os
 import model
 
 #constants
-path ='test_11.jpeg'
+path ='test_14.jpeg'
 widhtImg = 1025
 hightImg = 760
 webCamFeed = True
@@ -30,9 +30,18 @@ try:
     #finding all contours
     contours, hierarchy = cv2.findContours(imgCanny,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
     cv2.drawContours(imgContours,contours,-1,(0,255,0),10)
+    # cv2.drawContours(imgBiggestContours, [secondBiggestContour], -1, (255, 0, 0), 10)
     #find rectangle contours
     rectCon =utils.rectContour(contours)
     biggestContour = utils.getCornerPoints(rectCon[0])
+    # secondBiggestContour = utils.getCornerPoints(rectCon[1])
+    
+    # #print(secoundbiggestContour)
+    # if len(rectCon) >= 2:
+    #     secondBiggestContour = utils.getCornerPoints(rectCon[1])
+    #     text, extractedImg = utils.extract_text_from_box(img, secondBiggestContour)
+    #     print("Text from second largest box:", text)
+    #     cv2.imshow("Second Largest Box", extractedImg)
 
     #print(biggestContour)
     if biggestContour.size !=0:
