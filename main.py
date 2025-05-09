@@ -5,7 +5,7 @@ import os
 import model
 
 #constants
-path ='test_14.jpeg'
+path ='test_16.jpeg'
 widhtImg = 1025
 hightImg = 760
 webCamFeed = True
@@ -55,7 +55,7 @@ try:
         
         #Apply threshold
         imgWarpGray=cv2.cvtColor(imgWarpColored,cv2.COLOR_BGR2GRAY)
-        imgThresh=cv2.threshold(imgWarpGray,170,255,cv2.THRESH_BINARY_INV)[1]
+        imgThresh=imgWarpGray
 
         #get answers boxes
         boxes =utils.verticalSplitBoxes(imgThresh)

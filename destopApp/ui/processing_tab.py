@@ -125,24 +125,36 @@ class OMRProcessor(QObject):
         if self._cancel_requested:
             raise RuntimeError("Processing cancelled")
 
-        # Step 5: Optimized Answer Detection
+        # Step 1: Split into boxes
         boxes = utils.verticalSplitBoxes(thresh)
         answers = []
-        
+
+        # Step 2: For each question box
         for box in boxes:
             if self._cancel_requested:
                 raise RuntimeError("Processing cancelled")
-                
-            answer_blocks = utils.getAnswerBlocks(box)[2:6]  # Skip first 2 and last 1
-            marked = []
-            
-            for j, block in enumerate(answer_blocks):
-                if cv2.countNonZero(block) > 0:
-                    label, _ = model.classify_bubble(block)
+
+            # Get answer bubbles (skip unwanted blocks)
+            answer_blocks = utils.getAnswerBlocks(box)[2:6]  # Adjust if needed
+
+            # Step 3: Collect non-empty blocks for batch processing
+            valid_blocks = [(j, block) for j, block in enumerate(answer_blocks) if cv2.countNonZero(block) > 0]
+
+            if valid_blocks:
+                indices, blocks = zip(*valid_blocks)  # unzip indices and images
+
+                # Step 4: Batch classify
+                predictions = model.classify_batch(list(blocks))  # returns list of (label, confidence)
+
+                # Step 5: Get crossed bubble index (if only one)
+                marked = []
+                for idx, (label, _) in zip(indices, predictions):
                     if label == "Crossed_Bubble":
-                        marked.append(j+2)  # 1-based index
-            
-            answers.append(marked[0] if len(marked) == 1 else -1)
+                        marked.append(idx + 2)  # 1-based index since we skipped first 2 blocks
+
+                answers.append(marked[0] if len(marked) == 1 else -1)
+            else:
+                answers.append(-1)  # No valid bubbles
 
         # Step 6: Generate Results with optimized drawing
         drawing = np.zeros_like(warped)
