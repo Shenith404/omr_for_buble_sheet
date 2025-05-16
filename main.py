@@ -55,7 +55,7 @@ try:
         
         #Apply threshold
         imgWarpGray=cv2.cvtColor(imgWarpColored,cv2.COLOR_BGR2GRAY)
-        imgThresh=imgWarpGray
+        imgThresh=cv2.threshold(imgWarpGray,170,255,cv2.THRESH_BINARY_INV)[1]
 
         #get answers boxes
         boxes =utils.verticalSplitBoxes(imgThresh)

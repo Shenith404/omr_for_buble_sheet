@@ -95,25 +95,42 @@ class MainWindow(QMainWindow):
         self.project_tab.project_opened.connect(self.handle_project_opened)
         self.project_tab.images_added.connect(self.handle_images_added)
         
-        # Processing tab signals
+        # Connect Processing tab signals to their respective handlers:
+        # - processing_complete: Called when all images have been processed successfully
+        # - processing_cancelled: Called when user manually cancels processing
+        # - processing_started: Called when batch processing begins
+        # - processing_finished: Called when processing ends (success or failure)
         self.processing_tab.processing_complete.connect(self.handle_processing_complete)
         self.processing_tab.processing_cancelled.connect(self.handle_processing_cancelled)
         self.processing_tab.processing_started.connect(self.handle_processing_started)
         self.processing_tab.processing_finished.connect(self.handle_processing_finished)
         
-        # Tab change events
+        # Connect tab change event to monitor user navigation between tabs
+        # This allows enforcing requirements before allowing access to processing tab
         self.tab_widget.currentChanged.connect(self.handle_tab_changed)
 
     def handle_tab_changed(self, index):
-        """Strictly enforce project requirements before allowing processing tab access"""
-            
+        """
+        Handles tab switching events.
+        Can be used to:
+        - Validate project state before allowing processing tab access
+        - Save changes when leaving a tab
+        - Update UI elements based on selected tab
+        """
         pass
 
     def open_project(self):
-        """Open an existing project with validation"""
+        """
+        Opens an existing project with validation:
+        1. Shows directory selection dialog
+        2. Validates if selected folder is a valid OMR project by checking for:
+           - image_references.txt file (for linked images)
+           - original_images folder (for copied images)
+        3. If valid, loads project into project tab
+        """
         project_path = QFileDialog.getExistingDirectory(self, "Open Project")
         if project_path:
-            # Verify it's a valid project directory
+            # Verify it's a valid project directory by checking for required files/folders
             if not os.path.exists(os.path.join(project_path, "image_references.txt")) and \
                not os.path.exists(os.path.join(project_path, "original_images")):
                 QMessageBox.warning(self, "Invalid Project", "Selected folder is not a valid OMR project")
@@ -122,7 +139,13 @@ class MainWindow(QMainWindow):
             self.project_tab.load_project(project_path)
 
     def handle_project_created(self, project_path):
-        """Handle new project creation"""
+        """
+        Handles new project creation:
+        1. Updates current project path
+        2. Clears any existing loaded images
+        3. Updates processing tab with new project
+        4. Updates UI state and shows success message
+        """
         self.current_project = project_path
         self.current_images = []
         self.linked_images = False
@@ -182,7 +205,14 @@ class MainWindow(QMainWindow):
             csv_path = os.path.join(results_dir, "answers.csv")
             with open(csv_path, 'w', newline='') as f:
                 writer = csv.writer(f)
+                
+                # Create CSV header row with "Image" column followed by question numbers (Q1, Q2, etc.)
+                # The number of columns matches the number of questions in all_answers[0]
                 writer.writerow(["Image"] + [f"Q{i+1}" for i in range(len(all_answers[0]))])
+                
+                # Write each image's answers to the CSV
+                # img_name: name of the processed image file
+                # answers: list of detected answers for each question
                 for i, answers in enumerate(all_answers):
                     img_name = os.path.basename(self.current_images[i])
                     writer.writerow([img_name] + answers)

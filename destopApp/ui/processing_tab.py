@@ -194,6 +194,7 @@ class ProcessingTab(QWidget):
         self.current_index = 0
         self.processed_images = {}  # Stores only paths to processed images
         self.current_answers = {}  # Stores answers for CSV output
+        self.processed_count = 0  # Track the number of processed images
         self.setup_ui()
         self.setup_connections()
         
@@ -222,10 +223,18 @@ class ProcessingTab(QWidget):
         nav_layout = QHBoxLayout()
         self.btn_prev = QPushButton("◀ Previous")
         self.btn_next = QPushButton("Next ▶")
+        self.btn_delete_image = QPushButton("Delete Image")  # Move delete button here
+        self.btn_delete_image.setStyleSheet("""
+            background-color: #f44336; 
+            color: white;
+            font-weight: bold;
+        """)  # Add red background
+        self.btn_delete_image.clicked.connect(self.delete_current_image)
         self.lbl_image_info = QLabel("0/0 images loaded")
         nav_layout.addWidget(self.btn_prev)
         nav_layout.addWidget(self.lbl_image_info)
         nav_layout.addWidget(self.btn_next)
+        nav_layout.addWidget(self.btn_delete_image)  # Add delete button to navigation layout
         nav_group.setLayout(nav_layout)
 
         # Image Display with optimized settings
@@ -337,66 +346,63 @@ class ProcessingTab(QWidget):
         self.update_navigation_buttons()
 
     def show_current_image(self):
-        """Display current image with lazy loading"""
+        """Display the current image without showing marked answers"""
         if not self.image_paths:
             self.image_label.clear()
             self.lbl_image_info.setText("No images loaded")
             return
-        
+
         try:
             image_path = self.image_paths[self.current_index]
             filename = os.path.basename(image_path)
-            
-            # Check for processed version (load from disk only when needed)
-            if filename in self.processed_images:
-                marked_path = self.processed_images[filename]
-                image = cv2.imread(marked_path)
-                status_prefix = "Processed "
-            else:
-                image = cv2.imread(image_path)
-                status_prefix = "Original "
-                
+
+            # Load the original image
+            image = cv2.imread(image_path)
             if image is None:
                 raise ValueError("Failed to read image")
-            
-            # Convert and display with optimized scaling
+
+            # Convert the image from BGR (OpenCV format) to RGB (Qt format)
             rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             h, w, ch = rgb_image.shape
             bytes_per_line = ch * w
-            
-            # Create QImage without unnecessary copies
+
+            # Create a QImage object from the RGB image data
             q_img = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
             pixmap = QPixmap.fromImage(q_img)
-            
-            # Scale to fit while maintaining aspect ratio
+
+            # Scale the pixmap to fit the QLabel while maintaining the aspect ratio
             scaled_pixmap = pixmap.scaled(
                 self.image_label.size(),
                 Qt.KeepAspectRatio,
                 Qt.SmoothTransformation
             )
-            
+
+            # Set the scaled pixmap to the QLabel for display
             self.image_label.setPixmap(scaled_pixmap)
             self.lbl_image_info.setText(
-                f"{status_prefix}Image {self.current_index + 1}/{len(self.image_paths)}\n"
+                f"Image {self.current_index + 1}/{len(self.image_paths)}\n"
                 f"{filename}"
             )
-            
+
         except Exception as e:
+            # Handle any errors that occur during image loading or display
             print(f"Image display error: {str(e)}")
             self.image_label.setText(f"Error: {str(e)}")
             self.lbl_image_info.setText("Image display error")
 
     def show_next_image(self):
-        """Navigate to next image with bounds checking"""
+        """Navigate to the next image with bounds checking"""
         if self.current_index < len(self.image_paths) - 1:
             self.current_index += 1
             self.show_current_image()
+        self.update_navigation_buttons()
 
     def show_previous_image(self):
-        """Navigate to previous image with bounds checking"""
+        """Navigate to the previous image with bounds checking"""
         if self.current_index > 0:
             self.current_index -= 1
             self.show_current_image()
+        self.update_navigation_buttons()
             
     def update_navigation_buttons(self):
         """Update button states based on current position"""
@@ -424,11 +430,13 @@ class ProcessingTab(QWidget):
             # Reset processing state
             self.processed_images.clear()
             self.current_answers.clear()
+            self.processed_count = 0  # Reset processed count
             
             # Setup worker thread with lower priority
             self.processing_started.emit()
             self.btn_process_all.setEnabled(False)
             self.btn_cancel.setEnabled(True)
+            self.btn_delete_image.setEnabled(False)  # Disable delete button
             self.progress_bar.setValue(0)
             self.lbl_status.setText("Initializing batch processing...")
             QApplication.processEvents()  # Ensure UI updates
@@ -501,6 +509,7 @@ class ProcessingTab(QWidget):
             
             # 4. Update UI
             self.display_marked_image(marked_image)
+            self.processed_count += 1  # Increment processed count
             if self.current_index < len(self.image_paths) - 1:
                 self.current_index += 1
             self.update_navigation_buttons()
@@ -537,13 +546,12 @@ class ProcessingTab(QWidget):
             self.image_label.setText(f"Error displaying results")
 
     def finish_processing(self):
-        """Verify all images were processed"""
-        processed_count = len(self.processed_images)
+        """Verify all images were processed and allow navigation to other tabs"""
         total_count = len(self.image_paths)
         
-        if processed_count < total_count:
+        if self.processed_count < total_count:
             self.lbl_status.setText(
-                f"Completed {processed_count}/{total_count} images"
+                f"Completed {self.processed_count}/{total_count} images"
             )
         else:
             self.lbl_status.setText("Processing completed successfully!")
@@ -551,29 +559,45 @@ class ProcessingTab(QWidget):
         self.progress_bar.setValue(100)
         self.btn_process_all.setEnabled(True)
         self.btn_cancel.setEnabled(False)
-        
+        self.btn_delete_image.setEnabled(True)  # Enable delete button
+
+        # Ensure the worker thread is properly terminated
+        if hasattr(self, 'worker_thread') and self.worker_thread.isRunning():
+            self.worker_thread.quit()
+            self.worker_thread.wait()
+
         QMessageBox.information(
             self,
             "Processing Complete",
-            f"Processed {processed_count}/{total_count} images\n"
+            f"Processed {self.processed_count}/{total_count} images\n"
             f"Results saved to: {os.path.join(self.project_path, 'results')}"
         )
 
+        # Emit a signal or update the UI to allow navigation
+        self.processing_finished.emit()
+
     def cancel_processing(self):
-        """Handle processing cancellation"""
+        """Handle processing cancellation and reset state"""
         if hasattr(self, 'omr_processor'):
             self.omr_processor.cancel()
-        
-        # Save any processed data before cancelling
-        self.save_answers_to_csv()
-        
-        # Update UI
+
+            # Ensure the worker thread is properly terminated
+        if hasattr(self, 'worker_thread') and self.worker_thread.isRunning():
+            self.worker_thread.quit()
+            self.worker_thread.wait()
+
+
+        # Reset processing state
+        self.processed_images.clear()
+        self.current_answers.clear()
+        self.processed_count = 0  # Reset processed count
+        self.progress_bar.setValue(0)
         self.btn_process_all.setEnabled(True)
         self.btn_cancel.setEnabled(False)
-        self.lbl_status.setText("Processing cancelled")
-        self.progress_bar.setValue(0)
-        
+
+        # Emit a signal or update the UI to allow navigation
         self.processing_cancelled.emit()
+
 
     def handle_processing_error(self, error_msg):
         """Handle processing errors with user feedback"""
@@ -625,3 +649,55 @@ class ProcessingTab(QWidget):
             self.worker_thread.quit()
             self.worker_thread.wait(1000)  # Wait up to 1 second
         event.accept()
+
+    def showEvent(self, event):
+        """Reload images every time the tab is shown"""
+        super().showEvent(event)
+        if self.project_path:
+            self.load_project(self.project_path)
+
+    def delete_current_image(self):
+        """Delete the currently previewed image permanently from the project"""
+        if not self.image_paths:
+            QMessageBox.warning(self, "Delete Error", "No images to delete.")
+            return
+
+        try:
+            # Get the current image path
+            image_path = self.image_paths[self.current_index]
+            filename = os.path.basename(image_path)
+
+            # Confirm deletion
+            reply = QMessageBox.question(
+                self,
+                "Delete Image",
+                f"Are you sure you want to delete '{filename}' permanently?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+
+            # Delete the file from disk
+            os.remove(image_path)
+
+            # Remove the image from the list
+            del self.image_paths[self.current_index]
+
+            # Update the current index
+            if self.current_index >= len(self.image_paths):
+                self.current_index = max(0, len(self.image_paths) - 1)
+
+            # Update the UI
+            if self.image_paths:
+                self.show_current_image()
+            else:
+                self.image_label.clear()
+                self.lbl_image_info.setText("No images loaded")
+
+            self.update_navigation_buttons()
+
+            QMessageBox.information(self, "Delete Successful", f"'{filename}' has been deleted.")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Delete Error", f"Failed to delete image: {str(e)}")
