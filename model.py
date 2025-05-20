@@ -4,8 +4,8 @@ from tensorflow.keras.preprocessing.image import img_to_array
 import cv2
 
 # Load trained model
-MODEL_PATH = "bubble_cnn_model.keras"
-IMG_PATH = "crossImg.jpg"
+MODEL_PATH = "bubble_cnn_model copy.keras"
+# IMG_PATH = "crossImg.jpg"
 
 model = load_model(MODEL_PATH)
 
@@ -13,7 +13,7 @@ model = load_model(MODEL_PATH)
 print("Model expects input shape:", model.input_shape)  # Debugging step
 
 # Load image as grayscale (1 channel)
-img2 = cv2.imread(IMG_PATH, cv2.IMREAD_GRAYSCALE)
+# img2 = cv2.imread(IMG_PATH, cv2.IMREAD_GRAYSCALE)
 
 # Resize image to match model input size (64x64)
 TARGET_SIZE = (64, 64)
@@ -35,6 +35,6 @@ def classify_bubble(image):
     confidence = np.max(prediction) * 100
     return label, confidence
 
-label, confidence = classify_bubble(img2)
+# label, confidence = classify_bubble(img2)
 
-print(f"Predicted Label: {label}, Confidence: {confidence:.2f}%")
+# print(f"Predicted Label: {label}, Confidence: {confidence:.2f}%")

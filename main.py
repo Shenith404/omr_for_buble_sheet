@@ -5,7 +5,7 @@ import os
 import model
 
 #constants
-path ='test_16.jpeg'
+path ='images/test_16.jpeg'
 widhtImg = 1025
 hightImg = 760
 webCamFeed = True

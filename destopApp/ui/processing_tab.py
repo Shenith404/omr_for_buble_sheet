@@ -132,7 +132,7 @@ class OMRProcessor(QObject):
             raise RuntimeError("Processing cancelled")
 
         # Step 1: Split into boxes
-        boxes = utils.verticalSplitBoxes(thresh)
+        boxes = utils.verticalSplitBoxes(warped_gray)
         detected_answers = []
 
         # Step 2: For each question box
