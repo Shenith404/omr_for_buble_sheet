@@ -10,7 +10,7 @@ MODEL_PATH = "bubble_cnn_model.keras"
 model = load_model(MODEL_PATH)
 
 # Class labels
-class_labels = [ "Crossed_Bubble", "Empty_Bubble", "Other", "Shaded_Bubble"]
+class_labels = [ "Crossed_Bubble", "Empty_Bubble",  "Shaded_Bubble"]
 
 def classify_bubble(image):
     """Classifies the uploaded bubble image."""
