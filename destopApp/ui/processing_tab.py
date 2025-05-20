@@ -38,6 +38,11 @@ class OMRProcessor(QObject):
         self.heightImg = 760  # Standard OMR sheet height
         self.batch_size = 50  # Process images in batches to manage memory
         self.dummy_answer = [0] * 50  # Placeholder for dummy answers
+        self.model_answers = [2, 1, 1, 3, 2, 1, 4, 4, 2, 1,
+                                3, 3, 4, 1, 3, 2, 1, 1, 4, 2,
+                                1, 3, 2, 2, 1, 4, 3, 1, 1, 4,
+                                2, 1, 3, 3, 2, 1, 4, 2, 4, 1,
+                                2, 3, 1, 1, 4, 2, 1, 4, 3, 2] # Dummy answers for testing
 
     def process_all(self):
         """Process all images with accurate progress tracking"""
@@ -59,18 +64,18 @@ class OMRProcessor(QObject):
                         raise ValueError(f"Failed to load image: {filename}")
                     
                     # Process image
-                    answers, final_img = self.process_omr_sheet(image)
+                    detected_answers, final_img = self.process_omr_sheet(image)
                     
                     # Emit progress after completion (not before)
                     processed_count += 1
                     progress = int((processed_count / total_images) * 100)
                     self.progress_updated.emit(
-                        progress, 
+                        progress,
                         f"Processed {filename} ({processed_count}/{total_images})"
                     )
                     
                     # Emit results
-                    self.image_processed.emit(filename, answers, final_img)
+                    self.image_processed.emit(filename, detected_answers, final_img)
                     
                 except Exception as e:
                     self.error_occurred.emit(f"Skipped {filename}: {str(e)}")
@@ -81,6 +86,7 @@ class OMRProcessor(QObject):
         
         except Exception as e:
             self.error_occurred.emit(f"Fatal processing error: {str(e)}")
+
     def process_omr_sheet(self, image):
         """
         Process a single OMR sheet with optimized operations
@@ -127,7 +133,7 @@ class OMRProcessor(QObject):
 
         # Step 1: Split into boxes
         boxes = utils.verticalSplitBoxes(thresh)
-        answers = []
+        detected_answers = []
 
         # Step 2: For each question box
         for box in boxes:
@@ -152,19 +158,19 @@ class OMRProcessor(QObject):
                     if label == "Crossed_Bubble":
                         marked.append(idx + 2)  # 1-based index since we skipped first 2 blocks
 
-                answers.append(marked[0] if len(marked) == 1 else -1)
+                detected_answers.append(marked[0] if len(marked) == 1 else -1)
             else:
-                answers.append(-1)  # No valid bubbles
+                detected_answers.append(-1)  # No valid bubbles
 
         # Step 6: Generate Results with optimized drawing
         drawing = np.zeros_like(warped)
-        drawing = utils.showAnswers(drawing, answers)
+        drawing = utils.showAnswers(drawing, detected_answers, self.model_answers)
         
         inv_matrix = cv2.getPerspectiveTransform(pts2, pts1)
         inv_drawing = cv2.warpPerspective(drawing, inv_matrix, (img.shape[1], img.shape[0]))
         final_img = cv2.addWeighted(img, 1, inv_drawing, 1, 0)
 
-        return answers, final_img
+        return detected_answers, final_img
 
     def cancel(self):
         """Request cancellation of current processing"""
@@ -475,8 +481,6 @@ class ProcessingTab(QWidget):
             # Process events at certain intervals (every 5% or completion)
             if progress % 5 == 0 or progress == 100:
                 QApplication.processEvents()  # Ensure UI remains responsive
-
-
 
 
     def save_image_results(self, filename, answers, marked_image):

@@ -103,19 +103,35 @@ def getAnswerBlocks(img):
     blocks = np.hsplit(img, 7)
     return blocks
 
-def showAnswers(img, answerIndexes):
-    """Visualize answers on the image"""
+#show answers on the image
+def showAnswers(img,answerIndexes,model_answers):
     secW = int(img.shape[1] / 35)
     secH = int(img.shape[0] / 10)
     
-    result_img = img.copy()
-    
-    for x in range(5):  # Columns
-        for y in range(10):  # Rows
-            ans = answerIndexes[x * 10 + y]
-            if ans != -1:
-                cx = (ans * secW + 7 * x * secW) + secW // 2
-                cy = (y * secH) + secH // 2
-                cv2.rectangle(result_img, (cx-10, cy-10), (cx+10, cy+10), (0, 255, 0), cv2.FILLED)
-    
-    return result_img
+
+    for x in range(0,5):
+
+        for y in range(0, 10):
+            myAns = answerIndexes[x * 10 + y]
+            correctAns = model_answers[x * 10 + y]+1
+
+            # Center coordinates
+            cx = (myAns * secW + 7 * x * secW) + secW // 2
+            cy = (y * secH) + secH // 2
+
+            # 1. Draw yellow cross for user answer
+            if myAns != -1:
+                cv2.line(img, (cx - 10, cy - 10), (cx + 10, cy + 10), (0, 255, 255), 2)  # Yellow line
+                cv2.line(img, (cx - 10, cy + 10), (cx + 10, cy - 10), (0, 255, 255), 2)  # Yellow line
+
+            # 2. Draw square above cross
+            correct_cx = (correctAns * secW + 7 * x * secW) + secW // 2
+            if myAns == correctAns:
+                # Green square for correct answer
+                cv2.rectangle(img, (cx - 10, cy - 10), (cx + 10, cy + 10), (0, 255, 0), cv2.FILLED)
+            else:
+                # Red square for incorrect answer
+                cv2.rectangle(img, (correct_cx - 10, cy - 10), (correct_cx + 10, cy + 10), (0, 0, 255), cv2.FILLED)
+
+
+    return img
