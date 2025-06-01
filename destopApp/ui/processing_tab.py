@@ -43,6 +43,7 @@ class OMRProcessor(QObject):
                                 1, 3, 2, 2, 1, 4, 3, 1, 1, 4,
                                 2, 1, 3, 3, 2, 1, 4, 2, 4, 1,
                                 2, 3, 1, 1, 4, 2, 1, 4, 3, 2] # Dummy answers for testing
+        self.total_marks = 0  # Initialize total marks
 
     def process_all(self):
         """Process all images with accurate progress tracking"""
@@ -125,8 +126,8 @@ class OMRProcessor(QObject):
         warped_gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
         thresh = cv2.threshold(warped_gray, 170, 255, cv2.THRESH_BINARY_INV)[1]
 
-        totalPixelSize =cv2.countNonZero(thresh)
-        print("Total Pixel Size: ",totalPixelSize)
+       # totalPixelSize =cv2.countNonZero(thresh)
+       # print("Total Pixel Size: ",totalPixelSize)
 
         if self._cancel_requested:
             raise RuntimeError("Processing cancelled")
@@ -164,11 +165,13 @@ class OMRProcessor(QObject):
 
         # Step 6: Generate Results with optimized drawing
         drawing = np.zeros_like(warped)
-        drawing = utils.showAnswers(drawing, detected_answers, self.model_answers)
+        drawing,self.total_marks = utils.showAnswers(drawing, detected_answers, self.model_answers)
         
         inv_matrix = cv2.getPerspectiveTransform(pts2, pts1)
         inv_drawing = cv2.warpPerspective(drawing, inv_matrix, (img.shape[1], img.shape[0]))
         final_img = cv2.addWeighted(img, 1, inv_drawing, 1, 0)
+        cv2.putText(final_img, f"Total Marks: {self.total_marks}/50", (50, 700), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 250), 2)
+
 
         return detected_answers, final_img
 
