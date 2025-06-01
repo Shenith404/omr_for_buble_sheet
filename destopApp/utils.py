@@ -136,3 +136,14 @@ def showAnswers(img,answerIndexes,model_answers):
     
 
     return img,totalMarks
+
+
+#get the none zero answerlength
+def getNoneZeroAnswerLength(answers):
+    """Get the length of the answers that are not zero"""
+    count = 0
+    for ans in answers:
+        if ans != 0:
+            count += 1
+    return count
+    

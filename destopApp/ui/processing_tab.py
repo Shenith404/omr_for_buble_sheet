@@ -11,6 +11,7 @@ from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtCore import Qt, Signal, QThread, QObject
 import utils
 import model
+import subprocess  # For opening the CSV file directly
 
 class OMRProcessor(QObject):
     """
@@ -29,20 +30,16 @@ class OMRProcessor(QObject):
     error_occurred = Signal(str)
     cancelled = Signal()
 
-    def __init__(self, image_paths, project_path):
+    def __init__(self, image_paths, project_path, model_answers):
         super().__init__()
         self.image_paths = image_paths
         self.project_path = project_path
+        self.model_answers = model_answers  # Model answers for comparison
         self._cancel_requested = False
         self.widthImg = 1025  # Standard OMR sheet width
         self.heightImg = 760  # Standard OMR sheet height
         self.batch_size = 50  # Process images in batches to manage memory
         self.dummy_answer = [0] * 50  # Placeholder for dummy answers
-        self.model_answers = [2, 1, 1, 3, 2, 1, 4, 4, 2, 1,
-                                3, 3, 4, 1, 3, 2, 1, 1, 4, 2,
-                                1, 3, 2, 2, 1, 4, 3, 1, 1, 4,
-                                2, 1, 3, 3, 2, 1, 4, 2, 4, 1,
-                                2, 3, 1, 1, 4, 2, 1, 4, 3, 2] # Dummy answers for testing
         self.total_marks = 0  # Initialize total marks
 
     def process_all(self):
@@ -100,7 +97,12 @@ class OMRProcessor(QObject):
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray, (5, 5), 1)
         edges = cv2.Canny(blur, 10, 50)
+
+        #disable  mark button when processing
         
+
+
+     
         if self._cancel_requested:
             raise RuntimeError("Processing cancelled")
 
@@ -206,6 +208,7 @@ class ProcessingTab(QWidget):
         self.processed_count = 0  # Track the number of processed images
         self.setup_ui()
         self.setup_connections()
+        self.model_answers = []  # Placeholder for model answers
         
         # Initialize UI state
         self.image_label.setAlignment(Qt.AlignCenter)
@@ -268,7 +271,7 @@ class ProcessingTab(QWidget):
         """)
         self.btn_cancel = QPushButton("Cancel Processing")
         self.btn_cancel.setStyleSheet("""
-            background-color: #f44336; 
+            background-color: #f44336;
             color: white;
             padding: 8px;
         """)
@@ -281,6 +284,18 @@ class ProcessingTab(QWidget):
         self.lbl_status = QLabel("Ready")
         self.lbl_status.setStyleSheet("font-weight: bold;")
         
+        # Add a button to load model answers
+        self.btn_save_model_answers = QPushButton("Save Answers")
+        self.btn_save_model_answers.setStyleSheet("font-weight: bold; " )
+        self.btn_save_model_answers.setEnabled(False)  # Initially disabled
+
+        # Add new button for editing answers
+        self.btn_edit_answers = QPushButton("Edit Answers")
+        self.btn_edit_answers.setStyleSheet("font-weight: bold;")
+        self.btn_edit_answers.setEnabled(False)  # Initially disabled
+
+        control_layout.addWidget(self.btn_save_model_answers)  # Add to the control group
+        control_layout.addWidget(self.btn_edit_answers)  # Add the new button
         control_layout.addWidget(self.btn_process_all)
         control_layout.addWidget(self.btn_cancel)
         control_layout.addWidget(self.progress_bar)
@@ -301,6 +316,8 @@ class ProcessingTab(QWidget):
         self.btn_next.clicked.connect(self.show_next_image)
         self.btn_process_all.clicked.connect(self.start_processing)
         self.btn_cancel.clicked.connect(self.cancel_processing)
+        self.btn_save_model_answers.clicked.connect(self.save_model_answers)
+        self.btn_edit_answers.clicked.connect(self.edit_answers)  # Connect the new button
 
     def select_project(self):
         """Let user select a project folder with validation"""
@@ -323,6 +340,10 @@ class ProcessingTab(QWidget):
         
         # Load images with error handling
         try:
+            # Load model answers if available
+            self.save_model_answers()
+            # disable save answers button
+            self.btn_save_model_answers.setEnabled(False)  # Disable the button after loading
             # Load from original_images folder
             images_dir = os.path.join(project_path, "original_images")
             if os.path.exists(images_dir):
@@ -353,6 +374,8 @@ class ProcessingTab(QWidget):
             self.lbl_image_info.setText("No valid images found")
         
         self.update_navigation_buttons()
+        self.btn_save_model_answers.setEnabled(True)  # Enable the button when a project is loaded
+        self.btn_edit_answers.setEnabled(True)  # Enable the edit button when a project is loaded
 
     def show_current_image(self):
         """Display the current image without showing marked answers"""
@@ -422,6 +445,17 @@ class ProcessingTab(QWidget):
 
     def start_processing(self):
         """Start optimized batch processing"""
+
+        # give and exception when save answers button is enabled
+        if self.btn_save_model_answers.isEnabled():
+            QMessageBox.warning(self, "Error", "Please check & save model answers before processing.")
+            return
+
+
+
+        if utils.getNoneZeroAnswerLength(self.model_answers) == 0:
+            QMessageBox.warning(self, "Error", "No model answers detected. Please insert model answers before processing.")
+            return
         if not self.image_paths or not self.project_path:
             QMessageBox.warning(self, "Error", "No project or images loaded")
             return
@@ -452,7 +486,7 @@ class ProcessingTab(QWidget):
             
             self.worker_thread = QThread()
             self.worker_thread.setPriority(QThread.LowPriority)
-            self.omr_processor = OMRProcessor(self.image_paths, self.project_path)
+            self.omr_processor = OMRProcessor(self.image_paths, self.project_path, self.model_answers)
             self.omr_processor.moveToThread(self.worker_thread)
             
             # Connect signals
@@ -656,6 +690,7 @@ class ProcessingTab(QWidget):
             self.worker_thread.quit()
             self.worker_thread.wait(1000)  # Wait up to 1 second
         event.accept()
+        self.btn_save_model_answers.setEnabled(False)  # Disable the button when the application is closed
 
     def showEvent(self, event):
         """Reload images every time the tab is shown"""
@@ -708,3 +743,79 @@ class ProcessingTab(QWidget):
 
         except Exception as e:
             QMessageBox.critical(self, "Delete Error", f"Failed to delete image: {str(e)}")
+
+    def save_model_answers(self):
+        """Load or create model answers CSV file and open it for editing"""
+        try:
+            if not self.project_path:
+                QMessageBox.warning(self, "Error", "No project is open. Please select a project first.")
+                return
+
+            # Define the path for the model answers CSV file
+            model_answers_path = os.path.join(self.project_path, "model_answers.csv")
+            
+            # Check if the file exists; if not, create it with default answers and a header
+            if not os.path.exists(model_answers_path):
+                self.create_model_answers_file(model_answers_path)
+
+            # Open the CSV file directly for editing
+            # self.open_csv_file(model_answers_path)
+
+            # Load the answers from the file after editing
+            self.read_model_answers_file(model_answers_path)
+
+            QMessageBox.information(self, "Success", "Model answers Saved successfully!")
+
+            #disable save answers button
+            self.btn_save_model_answers.setEnabled(False)  # Disable the button after saving
+
+        except Exception as e:
+            # Handle errors by recreating the file
+            QMessageBox.warning(self, "Error", f"An error occurred: {str(e)}. Recreating the file.")
+            try:
+                if os.path.exists(model_answers_path):
+                    os.remove(model_answers_path)  # Delete the corrupted file
+                self.create_model_answers_file(model_answers_path)
+                self.open_csv_file(model_answers_path)
+                QMessageBox.information(self, "Notice", "Please add the answers again.")
+            except Exception as recreate_error:
+                QMessageBox.critical(self, "Critical Error", f"Failed to recreate the file: {str(recreate_error)}")
+
+    def create_model_answers_file(self, file_path):
+        """Create a new model answers CSV file with default answers and a header"""
+        with open(file_path, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            # Write header (Q1, Q2, ..., Q50)
+            writer.writerow([f"Q{i+1}" for i in range(50)])
+            # Write default answers (50 questions with answer 0)
+            writer.writerow([0] * 50)
+
+    def open_csv_file(self, file_path):
+        """Open the CSV file directly for editing"""
+        #enable save answers button
+        self.btn_save_model_answers.setEnabled(True)
+        
+        if os.name == 'nt':  # Windows
+            os.startfile(file_path)
+        else:  # macOS or Linux
+            subprocess.call(('open' if os.name == 'posix' else 'xdg-open', file_path))
+
+    def read_model_answers_file(self, file_path):
+        """Read the model answers from the CSV file and update the processor"""
+        with open(file_path, 'r') as csvfile:
+            reader = csv.reader(csvfile)
+            next(reader)  # Skip the header row
+            answers = next(reader)  # Read the first row of answers
+            self.model_answers = [int(ans) for ans in answers]
+
+    def edit_answers(self):
+        """Open the model answers CSV file for editing"""
+        if not self.project_path:
+            QMessageBox.warning(self, "Error", "No project is open. Please select a project first.")
+            return
+
+        model_answers_path = os.path.join(self.project_path, "model_answers.csv")
+        if os.path.exists(model_answers_path):
+            self.open_csv_file(model_answers_path)
+        else:
+            QMessageBox.warning(self, "Error", "Model answers file does not exist. Please load it first.")
