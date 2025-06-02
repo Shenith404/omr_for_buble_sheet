@@ -103,13 +103,40 @@ def getAnswerBlocks(img):
     blocks = np.hsplit(img, 7)
     return blocks
 
+#get the none zero answerlength
+# def getNoneZeroAnswerLength(answers):
+#     """Get the length of the answers that are not zero"""
+#     count = 0
+#     try :
+#         for i in len(answers):
+#             if answers[i] != 0:
+#                 count += 1
+#     except Exception as e:
+#         print(f"Error in getNoneZeroAnswerLength: {e}")
+#         return 50
+
+#     return count
+
+#check the if any answer is zero in mid of the answers
+# def checkZeroInMid(answers):
+#     """Check if there is a zero in the middle of the answers"""
+#     totalQuestions = getNoneZeroAnswerLength(answers)
+#     for i,ans in enumerate(answers):
+#         if  (i > totalQuestions - 1):
+#             return True
+#         elif (ans == 0) :
+#             return f"answer {i+1} cannot be empty"
+#         elif (ans>4) or (ans < 0):
+#             return f"answer {i+1} is not valid, it should be between 0 and 4"
+    
+#     return True
+
 #show answers on the image
 def showAnswers(img,answerIndexes,model_answers):
     secW = int(img.shape[1] / 35)
     secH = int(img.shape[0] / 10)
     totalMarks=0
 
-    
     for x in range(0,5):
 
         for y in range(0, 10):
@@ -127,35 +154,17 @@ def showAnswers(img,answerIndexes,model_answers):
                 cv2.line(img, (cx - 10, cy + 10), (cx + 10, cy - 10), (0, 255, 255), 2)  # Yellow line
 
             # 2. Draw square above cross
+            correct_cx = (correctAns * secW + 7 * x * secW) + secW // 2
             if myAns == correctAns:
-                totalMarks += 1
-                # Add green rectangle for whole line
-                cv2.rectangle(img, (cx - 15, cy - 15), (cx + 15, cy + 15), (0, 255, 0), cv2.FILLED)
+                # Green square for correct answer
+                totalMarks+=1
+                cv2.rectangle(img, (cx - 10, cy - 10), (cx + 10, cy + 10), (0, 255, 0), cv2.FILLED)
+            else:
+                # Red square for incorrect answer
+                cv2.rectangle(img, (correct_cx - 10, cy - 10), (correct_cx + 10, cy + 10), (0, 0, 255), cv2.FILLED)
 
-    
 
     return img,totalMarks
 
 
-#get the none zero answerlength
-def getNoneZeroAnswerLength(answers):
-    """Get the length of the answers that are not zero"""
-    count = 0
-    for ans in answers:
-        if ans != 0:
-            count += 1
-    return count
-#check the if any answer is zero in mid of the answers
-def checkZeroInMid(answers):
-    """Check if there is a zero in the middle of the answers"""
-    totalQuestions = getNoneZeroAnswerLength(answers)
-    for i,ans in enumerate(answers):
-        if  (i > totalQuestions - 1):
-            return True
-        elif (ans == 0) :
-            return f"answer {i+1} cannot be empty"
-        elif (ans>4) or (ans < 0):
-            return f"answer {i+1} is not valid, it should be between 0 and 4"
-    
-    return True
     

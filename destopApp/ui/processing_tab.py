@@ -454,15 +454,7 @@ class ProcessingTab(QWidget):
             return
 
 
-        #check all answers are zero
-        if utils.getNoneZeroAnswerLength(self.model_answers) == 0:
-            QMessageBox.warning(self, "Error", "No model answers detected. Please insert model answers before processing.")
-            return
-        #if not all answers are zero , check any zero answer in middle
-        result = utils.checkZeroInMid(self.model_answers)
-        if result is not True:
-            QMessageBox.warning(self, "Error", result)
-            return
+    
 
 
         if not self.image_paths or not self.project_path:
@@ -501,7 +493,9 @@ class ProcessingTab(QWidget):
             # Connect signals
             self.worker_thread.started.connect(self.omr_processor.process_all)
             self.omr_processor.progress_updated.connect(self.update_progress)
-            self.omr_processor.image_processed.connect(self.save_image_results)
+            self.omr_processor.image_processed.connect(
+                lambda filename, answers, marked_image: self.save_image_results(filename, answers, marked_image, self.omr_processor.total_marks)
+            )
             self.omr_processor.processing_complete.connect(self.finish_processing)
             self.omr_processor.error_occurred.connect(self.handle_processing_error)
             self.omr_processor.cancelled.connect(self.cancel_processing)
@@ -529,7 +523,7 @@ class ProcessingTab(QWidget):
                 QApplication.processEvents()  # Ensure UI remains responsive
 
 
-    def save_image_results(self, filename, answers, marked_image):
+    def save_image_results(self, filename, answers, marked_image,total_marks):
         """Save results immediately after each image is processed"""
         if not self.project_path or marked_image is None:
             return
@@ -551,11 +545,11 @@ class ProcessingTab(QWidget):
             with open(csv_path, 'a', newline='') as csvfile:
                 writer = csv.writer(csvfile)
                 if not file_exists:
-                    writer.writerow(["Filename"] + [f"Q{i+1}" for i in range(len(answers))])
+                    writer.writerow(["Filename", "TotalMarks", ""] + [f"Q{i+1}" for i in range(len(answers))])
                 
                 # Convert answers to 1-based index (0 for unanswered)
                 corrected_answers = [ans-1 if ans != -1 else 0 for ans in answers]
-                writer.writerow([filename] + corrected_answers)
+                writer.writerow([filename, total_marks, ""] + corrected_answers)
             
             # 4. Update UI
             self.display_marked_image(marked_image)
@@ -566,6 +560,7 @@ class ProcessingTab(QWidget):
             
         except Exception as e:
             self.handle_processing_error(f"Error saving {filename}: {str(e)}")
+
     def display_marked_image(self, marked_image):
         """Display marked image with optimized rendering"""
         try:
@@ -789,7 +784,7 @@ class ProcessingTab(QWidget):
                 QMessageBox.critical(self, "Critical Error", f"Failed to recreate the file: {str(recreate_error)}")
 
 
-    def create_model_answers_file(file_path):
+    def create_model_answers_file(self, file_path):
         """Create an Excel file where only the second row is editable with allowed values 0-4"""
         wb = Workbook()
         ws = wb.active
