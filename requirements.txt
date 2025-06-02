@@ -13,6 +13,8 @@ python-dateutil==2.9.0.post0
 six==1.17.0
 tensorflow==2.14.0
 PySide6==6.2.1
+openpyxl
+
 
 
 

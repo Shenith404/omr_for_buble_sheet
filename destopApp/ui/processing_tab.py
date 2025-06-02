@@ -12,7 +12,9 @@ from PySide6.QtCore import Qt, Signal, QThread, QObject
 import utils
 import model
 import subprocess  # For opening the CSV file directly
-
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Protection
+from openpyxl.worksheet.datavalidation import DataValidation
 class OMRProcessor(QObject):
     """
     Optimized OMR processing worker that handles batch processing of answer sheets
@@ -452,10 +454,17 @@ class ProcessingTab(QWidget):
             return
 
 
-
+        #check all answers are zero
         if utils.getNoneZeroAnswerLength(self.model_answers) == 0:
             QMessageBox.warning(self, "Error", "No model answers detected. Please insert model answers before processing.")
             return
+        #if not all answers are zero , check any zero answer in middle
+        result = utils.checkZeroInMid(self.model_answers)
+        if result is not True:
+            QMessageBox.warning(self, "Error", result)
+            return
+
+
         if not self.image_paths or not self.project_path:
             QMessageBox.warning(self, "Error", "No project or images loaded")
             return
@@ -745,76 +754,95 @@ class ProcessingTab(QWidget):
             QMessageBox.critical(self, "Delete Error", f"Failed to delete image: {str(e)}")
 
     def save_model_answers(self):
-        """Load or create model answers CSV file and open it for editing"""
+        """Load or create model answers XLSX file and open it for editing"""
         try:
             if not self.project_path:
                 QMessageBox.warning(self, "Error", "No project is open. Please select a project first.")
                 return
 
-            # Define the path for the model answers CSV file
-            model_answers_path = os.path.join(self.project_path, "model_answers.csv")
-            
+            # Define the path for the model answers XLSX file
+            model_answers_path = os.path.join(self.project_path, "model_answers.xlsx")
+
             # Check if the file exists; if not, create it with default answers and a header
             if not os.path.exists(model_answers_path):
                 self.create_model_answers_file(model_answers_path)
 
-            # Open the CSV file directly for editing
-            # self.open_csv_file(model_answers_path)
+            # self.open_csv_file(model_answers_path)  # Optional manual editing (disabled for now)
 
             # Load the answers from the file after editing
             self.read_model_answers_file(model_answers_path)
 
-            QMessageBox.information(self, "Success", "Model answers Saved successfully!")
+            QMessageBox.information(self, "Success", "Model answers saved successfully!")
 
-            #disable save answers button
-            self.btn_save_model_answers.setEnabled(False)  # Disable the button after saving
+            # Disable save answers button
+            self.btn_save_model_answers.setEnabled(False)
 
         except Exception as e:
-            # Handle errors by recreating the file
             QMessageBox.warning(self, "Error", f"An error occurred: {str(e)}. Recreating the file.")
             try:
                 if os.path.exists(model_answers_path):
-                    os.remove(model_answers_path)  # Delete the corrupted file
+                    os.remove(model_answers_path)
                 self.create_model_answers_file(model_answers_path)
                 self.open_csv_file(model_answers_path)
                 QMessageBox.information(self, "Notice", "Please add the answers again.")
             except Exception as recreate_error:
                 QMessageBox.critical(self, "Critical Error", f"Failed to recreate the file: {str(recreate_error)}")
 
-    def create_model_answers_file(self, file_path):
-        """Create a new model answers CSV file with default answers and a header"""
-        with open(file_path, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            # Write header (Q1, Q2, ..., Q50)
-            writer.writerow([f"Q{i+1}" for i in range(50)])
-            # Write default answers (50 questions with answer 0)
-            writer.writerow([0] * 50)
+
+    def create_model_answers_file(file_path):
+        """Create an Excel file where only the second row is editable with allowed values 0-4"""
+        wb = Workbook()
+        ws = wb.active
+
+        # Write header (Q1 to Q50) in row 1
+        for col in range(1, 51):
+            cell = ws.cell(row=1, column=col, value=f"Q{col}")
+            cell.protection = Protection(locked=True)  # lock header
+
+        # Write default answers (0s) in row 2
+        for col in range(1, 51):
+            cell = ws.cell(row=2, column=col, value=0)
+            cell.protection = Protection(locked=False)  # allow editing
+
+        # Add data validation (0 to 4) for editable answer cells
+        dv = DataValidation(type="whole", operator="between", formula1=0, formula2=4)
+        dv.error = "Please enter a number between 0 and 4."
+        dv.errorTitle = "Invalid Input"
+        ws.add_data_validation(dv)
+        dv.add("A2:AX2")  # 50 columns = A to AX
+
+        # Lock sheet
+        ws.protection.sheet = True
+        ws.protection.enable()
+
+        # Save the file
+        wb.save(file_path)
 
     def open_csv_file(self, file_path):
-        """Open the CSV file directly for editing"""
-        #enable save answers button
+        """Open the XLSX file directly for editing"""
         self.btn_save_model_answers.setEnabled(True)
-        
+
         if os.name == 'nt':  # Windows
             os.startfile(file_path)
         else:  # macOS or Linux
             subprocess.call(('open' if os.name == 'posix' else 'xdg-open', file_path))
 
+
     def read_model_answers_file(self, file_path):
-        """Read the model answers from the CSV file and update the processor"""
-        with open(file_path, 'r') as csvfile:
-            reader = csv.reader(csvfile)
-            next(reader)  # Skip the header row
-            answers = next(reader)  # Read the first row of answers
-            self.model_answers = [int(ans) for ans in answers]
+        """Read the model answers from the XLSX file and update the processor"""
+        wb = load_workbook(file_path, data_only=True)
+        ws = wb.active
+        row = [ws.cell(row=2, column=col).value for col in range(1, 51)]
+        self.model_answers = [int(ans) if ans is not None else 0 for ans in row]
+
 
     def edit_answers(self):
-        """Open the model answers CSV file for editing"""
+        """Open the model answers XLSX file for editing"""
         if not self.project_path:
             QMessageBox.warning(self, "Error", "No project is open. Please select a project first.")
             return
 
-        model_answers_path = os.path.join(self.project_path, "model_answers.csv")
+        model_answers_path = os.path.join(self.project_path, "model_answers.xlsx")
         if os.path.exists(model_answers_path):
             self.open_csv_file(model_answers_path)
         else:

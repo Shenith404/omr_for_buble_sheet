@@ -110,7 +110,6 @@ def showAnswers(img,answerIndexes,model_answers):
     totalMarks=0
 
     
-
     for x in range(0,5):
 
         for y in range(0, 10):
@@ -146,4 +145,17 @@ def getNoneZeroAnswerLength(answers):
         if ans != 0:
             count += 1
     return count
+#check the if any answer is zero in mid of the answers
+def checkZeroInMid(answers):
+    """Check if there is a zero in the middle of the answers"""
+    totalQuestions = getNoneZeroAnswerLength(answers)
+    for i,ans in enumerate(answers):
+        if  (i > totalQuestions - 1):
+            return True
+        elif (ans == 0) :
+            return f"answer {i+1} cannot be empty"
+        elif (ans>4) or (ans < 0):
+            return f"answer {i+1} is not valid, it should be between 0 and 4"
+    
+    return True
     
