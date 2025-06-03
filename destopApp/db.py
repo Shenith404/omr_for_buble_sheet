@@ -1,0 +1,151 @@
+import os
+import json
+from datetime import datetime
+
+class OMRJsonHandler:
+    def __init__(self, project_path):
+        self.json_path = os.path.join(project_path, "results", "answers.json")
+        os.makedirs(os.path.dirname(self.json_path), exist_ok=True)
+        self._initialize_file()  # Always recreate the file
+
+    def _initialize_file(self):
+        """Always recreate the JSON file (delete if exists)"""
+        if os.path.exists(self.json_path):
+            os.remove(self.json_path)
+        with open(self.json_path, 'w') as f:
+            json.dump({
+                "_metadata": {
+                    "version": 1.0,
+                    "created": datetime.now().isoformat(),
+                    "total_sheets": 0
+                },
+                "data": {}
+            }, f, indent=4)
+
+    def _load_data(self):
+        """Load and validate JSON data"""
+        with open(self.json_path, 'r') as f:
+            data = json.load(f)
+
+        # Backward compatibility
+        if "data" not in data:
+            data = {"_metadata": {}, "data": data}
+
+        return data
+
+    def _save_data(self, data):
+        """Atomic write to JSON file"""
+        temp_path = self.json_path + ".tmp"
+        with open(temp_path, 'w') as f:
+            json.dump(data, f, indent=4)
+        os.replace(temp_path, self.json_path)
+
+    # --- CRUD Operations ---
+
+    def create_or_update_sheet(self, filename, detected_answers, total_marks=0):
+        #detected answers saved as  1->2 2->3 3->4 4->5 and no answers saved as -1
+        data = self._load_data()
+
+        data["data"][filename] = {
+            "detected": detected_answers,
+            "total_marks": total_marks,
+            "reviewed": False,
+            "last_modified": datetime.now().isoformat()
+        }
+
+        data["_metadata"]["total_sheets"] = len(data["data"])
+        data["_metadata"]["last_updated"] = datetime.now().isoformat()
+
+        self._save_data(data)
+
+    def get_sheet(self, filename):
+        """Read single sheet data"""
+        data = self._load_data()
+        return data["data"].get(filename)
+
+    def get_all_sheets(self, reviewed=None):
+        """Get all sheets, optionally filter by review status"""
+        data = self._load_data()
+        if reviewed is None:
+            return data["data"]
+
+        return {
+            k: v for k, v in data["data"].items()
+            if v["reviewed"] == reviewed
+        }
+
+    def update_correction(self, filename, question_num, new_answer):
+        """Manually correct a single answer"""
+        data = self._load_data()
+
+        if filename not in data["data"]:
+            raise ValueError("Sheet not found")
+
+        sheet = data["data"][filename]
+
+        if "corrected" not in sheet:
+            sheet["corrected"] = sheet["detected"][:]
+
+        sheet["corrected"][question_num] = new_answer
+        sheet["reviewed"] = False
+        sheet["last_modified"] = datetime.now().isoformat()
+
+        if "model_answers" in data["_metadata"]:
+            sheet["total_marks"] = self._calculate_marks(
+                sheet["corrected"],
+                data["_metadata"]["model_answers"]
+            )
+
+        self._save_data(data)
+        return sheet["total_marks"]
+
+    def delete_sheet(self, filename):
+        """Remove a sheet record"""
+        data = self._load_data()
+        if filename in data["data"]:
+            del data["data"][filename]
+            data["_metadata"]["total_sheets"] = len(data["data"])
+            self._save_data(data)
+            return True
+        return False
+
+    # --- Helper Methods ---
+
+    def set_model_answers(self, answers):
+        """Store model answers for automatic marking"""
+        data = self._load_data()
+        data["_metadata"]["model_answers"] = answers
+        self._save_data(data)
+
+    def _calculate_marks(self, student_answers, model_answers):
+        """Calculate total correct answers"""
+        return sum(1 for s, m in zip(student_answers, model_answers) if s == m)
+
+    def mark_for_review(self, filename, status=True):
+        """Flag/unflag a sheet for manual review"""
+        data = self._load_data()
+        if filename in data["data"]:
+            data["data"][filename]["reviewed"] = status
+            self._save_data(data)
+            return True
+        return False
+
+    def reset(self):
+        """Clear all sheet data and metadata (except model answers)"""
+        data = self._load_data()
+        model_answers = data["_metadata"].get("model_answers", None)
+
+        data = {
+            "_metadata": {
+                "version": 1.0,
+                "created": datetime.now().isoformat(),
+                "total_sheets": 0,
+                "last_updated": datetime.now().isoformat()
+            },
+            "data": {}
+        }
+
+        if model_answers:
+            data["_metadata"]["model_answers"] = model_answers
+
+        self._save_data(data)

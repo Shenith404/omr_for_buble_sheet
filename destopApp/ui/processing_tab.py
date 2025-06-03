@@ -1,3 +1,4 @@
+import json
 import os
 import csv
 import cv2
@@ -9,12 +10,16 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtCore import Qt, Signal, QThread, QObject
+
 import utils
 import model
 import subprocess  # For opening the CSV file directly
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Protection
 from openpyxl.worksheet.datavalidation import DataValidation
+import db
+
+
 class OMRProcessor(QObject):
     """
     Optimized OMR processing worker that handles batch processing of answer sheets
@@ -211,6 +216,7 @@ class ProcessingTab(QWidget):
         self.setup_ui()
         self.setup_connections()
         self.model_answers = []  # Placeholder for model answers
+        self.handler=None
         
         # Initialize UI state
         self.image_label.setAlignment(Qt.AlignCenter)
@@ -453,10 +459,6 @@ class ProcessingTab(QWidget):
             QMessageBox.warning(self, "Error", "Please check & save model answers before processing.")
             return
 
-
-    
-
-
         if not self.image_paths or not self.project_path:
             QMessageBox.warning(self, "Error", "No project or images loaded")
             return
@@ -467,6 +469,11 @@ class ProcessingTab(QWidget):
             
             # Initialize CSV file
             csv_path = os.path.join(results_dir, "answers.csv")
+
+            # Initialize json file
+            self.handler = db.OMRJsonHandler(self.project_path)
+
+
             with open(csv_path, 'w', newline='') as csvfile:
                 writer = csv.writer(csvfile)
                 writer.writerow(["Filename"] + [f"Q{i+1}" for i in range(50)])
@@ -551,12 +558,20 @@ class ProcessingTab(QWidget):
                 corrected_answers = [ans-1 if ans != -1 else 0 for ans in answers]
                 writer.writerow([filename, total_marks, ""] + corrected_answers)
             
+            # 4. Save answers in a json file
+            #self.handler = db.OMRJsonHandler(self.project_path)
+
+            self.handler.create_or_update_sheet(filename, answers, total_marks)
+                    
+            
             # 4. Update UI
             self.display_marked_image(marked_image)
             self.processed_count += 1  # Increment processed count
             if self.current_index < len(self.image_paths) - 1:
                 self.current_index += 1
             self.update_navigation_buttons()
+
+            
             
         except Exception as e:
             self.handle_processing_error(f"Error saving {filename}: {str(e)}")
