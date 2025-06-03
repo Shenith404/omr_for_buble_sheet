@@ -166,5 +166,54 @@ def showAnswers(img,answerIndexes,model_answers):
 
     return img,totalMarks
 
+def process_omr_sheet_without_model( image, detected_answers, model_answers):
+    """
+    Process a single OMR sheet with optimized operations
+    Returns:
+    - answers: List of detected answers (1-based index)
+    - marked_image: Image with marked answers
+    """
+    # Step 1: Preprocessing with optimized operations
+    img = cv2.resize(image, (1025, 760))
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    blur = cv2.GaussianBlur(gray, (5, 5), 1)
+    edges = cv2.Canny(blur, 10, 50)
 
     
+
+    # Step 2: Contour Detection with area filtering
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    rects = rectContour(contours)
+    
+    if not rects:
+        return  img
+
+    # Step 3: Perspective Transform with error checking
+    biggest = getCornerPoints(rects[0])
+    if biggest.size == 0:
+        return  img
+        
+    biggest = reorder(biggest)
+    pts1 = np.float32(biggest)
+    pts2 = np.float32([[0, 0], [1025, 0], [0, 760], [1025, 760]])
+    matrix = cv2.getPerspectiveTransform(pts1, pts2)
+    warped = cv2.warpPerspective(img, matrix, (1025, 760))
+
+    # Step 4: Adaptive Thresholding for better robustness
+    warped_gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
+
+
+    # Step 6: Generate Results with optimized drawing
+    drawing = np.zeros_like(warped)
+    try:
+        drawing,total_marks = showAnswers(drawing, detected_answers, model_answers)
+    except Exception as e:
+        print(f"Error in showAnswers: {e}")
+        return img
+    inv_matrix = cv2.getPerspectiveTransform(pts2, pts1)
+    inv_drawing = cv2.warpPerspective(drawing, inv_matrix, (img.shape[1], img.shape[0]))
+    final_img = cv2.addWeighted(img, 1, inv_drawing, 1, 0)
+    cv2.putText(final_img, f"Total Marks: {total_marks}/50", (50, 700), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 250), 2)
+
+
+    return  final_img

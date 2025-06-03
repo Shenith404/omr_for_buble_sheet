@@ -7,7 +7,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt, Signal
 import db  # Assuming db is a module for handling JSON data
-
+import utils
+import cv2
 class ReviewTab(QWidget):
     """Enhanced Review Tab with project loading and 70-30 split layout"""
     
@@ -26,6 +27,7 @@ class ReviewTab(QWidget):
         self.setup_ui()
         self.setup_connections()
         self.handler=None
+        self.model_answers=[]
         
     def setup_ui(self):
         """Initialize UI with 70-30 horizontal split layout"""
@@ -214,6 +216,8 @@ class ReviewTab(QWidget):
 
         #load db
         self.handler= db.OMRJsonHandler(project_path)
+        #load model answers
+        self.model_answers=self.handler.read_model_answers()
         
         # Load reviewed status
         review_file = os.path.join(project_path, "review_status.json")
@@ -332,7 +336,7 @@ class ReviewTab(QWidget):
 
         #update the answer in the db
         try:
-            self.handler.update_correction(
+            new_detected_answers=self.handler.update_correction(
                 current_image,
                 question_num-1,  # Convert to 0-based index
                 new_answer+1  #detected answers saved as  1->2 2->3 3->4 4->5 and no answers saved as -1
@@ -345,8 +349,24 @@ class ReviewTab(QWidget):
             )
             if not os.path.exists(original_image_path):
                 raise FileNotFoundError(f"Original image not found: {original_image_path}")
-            # Update the image with new answer
             
+            img= cv2.imread(original_image_path)
+            # Update the image with new answer
+            result_img= utils.process_omr_sheet_without_model(
+                img,
+                new_detected_answers,
+                self.model_answers
+
+            )
+            # Save the updated image back to results folder
+            result_image_path = os.path.join(
+                self.project_path, "results", current_image
+            )
+            cv2.imwrite(result_image_path, result_img)
+
+            # Update the displayed image
+            self.image_paths[self.current_index] = result_image_path
+            self.show_current_image()
 
             # Show confirmation
             QMessageBox.information(

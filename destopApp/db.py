@@ -100,7 +100,7 @@ class OMRJsonHandler:
             )
         
         self._save_data(data)
-        return sheet["total_marks"]
+        return sheet["detected"]
 
     def delete_sheet(self, filename):
         """Remove a sheet record"""
@@ -129,6 +129,17 @@ class OMRJsonHandler:
         data = self._load_data()
         data["_metadata"]["model_answers"] = answers
         self._save_data(data)
+
+    def save_model_answers(self, answers):
+        """Save model answers to the JSON file"""
+        data = self._load_data()
+        data["_metadata"]["model_answers"] = answers
+        self._save_data(data)
+
+    def read_model_answers(self):
+        """Read model answers from the JSON file"""
+        data = self._load_data()
+        return data["_metadata"].get("model_answers")
 
     def _calculate_marks(self, student_answers, model_answers):
         """Calculate total correct answers"""

@@ -475,6 +475,9 @@ class ProcessingTab(QWidget):
             #delete existing json file
             self.handler.delete_answers_file()
 
+            #save model answers to json file
+            self.handler.save_model_answers(self.model_answers)
+
 
             with open(csv_path, 'w', newline='') as csvfile:
                 writer = csv.writer(csvfile)
