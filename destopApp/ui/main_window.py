@@ -4,11 +4,13 @@ import cv2
 from PySide6.QtWidgets import (
     QMainWindow, QTabWidget, QStatusBar, 
     QMessageBox, QVBoxLayout, QWidget, 
-    QMenuBar, QMenu, QFileDialog
+    QMenuBar, QMenu, QFileDialog, QPushButton, QLabel, QHBoxLayout
 )
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QPixmap
 from ui.project_tab import ProjectTab
 from ui.processing_tab import ProcessingTab
+from ui.review_tab import ReviewTab
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -24,6 +26,7 @@ class MainWindow(QMainWindow):
             # Initialize tabs
             self.project_tab = ProjectTab()
             self.processing_tab = ProcessingTab()
+            self.review_tab = ReviewTab()  # Add ReviewTab
             
             # Setup UI
             self.setup_ui()
@@ -51,6 +54,7 @@ class MainWindow(QMainWindow):
         # Add tabs
         self.tab_widget.addTab(self.project_tab, "📁 Project")
         self.tab_widget.addTab(self.processing_tab, "🔍 Processing")
+        self.tab_widget.addTab(self.review_tab, "🖼️ Review")  # Add Review tab
         
         # Remove the tab restriction
         # self.tab_widget.setTabEnabled(1, False)  # Comment out or remove this line
@@ -180,6 +184,8 @@ class MainWindow(QMainWindow):
         # Properly update processing tab
         self.processing_tab.load_project(self.current_project)
         self.processing_tab.set_image_paths(image_paths.copy())  # Use copy to avoid reference issues
+        
+        self.review_tab.load_images(image_paths)  # Load images into ReviewTab
         
         self.update_ui_state()
         self.tab_widget.setTabEnabled(1, True)  # Ensure processing tab is enabled

@@ -472,6 +472,8 @@ class ProcessingTab(QWidget):
 
             # Initialize json file
             self.handler = db.OMRJsonHandler(self.project_path)
+            #delete existing json file
+            self.handler.delete_answers_file()
 
 
             with open(csv_path, 'w', newline='') as csvfile:
