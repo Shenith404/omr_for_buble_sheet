@@ -83,14 +83,19 @@ class OMRJsonHandler:
             raise ValueError("Sheet not found")
             
         sheet = data["data"][filename]
-        sheet["corrected"][question_num] = new_answer
+        
+        # Initialize 'detected' if it doesn't exist
+        if "detected" not in sheet:
+            sheet["detected"] = {}
+        
+        sheet["detected"][question_num] = new_answer
         sheet["reviewed"] = False
         sheet["last_modified"] = datetime.now().isoformat()
         
         # Recalculate marks if needed
         if "model_answers" in data["_metadata"]:
             sheet["total_marks"] = self._calculate_marks(
-                sheet["corrected"], 
+                sheet["detected"],
                 data["_metadata"]["model_answers"]
             )
         

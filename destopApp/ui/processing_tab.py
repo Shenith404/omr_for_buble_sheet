@@ -544,7 +544,7 @@ class ProcessingTab(QWidget):
             os.makedirs(results_dir, exist_ok=True)
             
             # 2. Save marked image
-            output_path = os.path.join(results_dir, f"marked_{filename}")
+            output_path = os.path.join(results_dir, f"{filename}")
             cv2.imwrite(output_path, marked_image)
             
             # 3. Save answers to CSV immediately
