@@ -71,7 +71,7 @@ class OMRJsonHandler:
             return data["data"]
         
         return {
-            k: v for k, v in data["data"].items() 
+            k: v for k, v in data["data"].items()
             if v["reviewed"] == reviewed
         }
 
@@ -153,3 +153,9 @@ class OMRJsonHandler:
             self._save_data(data)
             return True
         return False
+    
+    #get reviewed sheet names
+    def get_reviewed_sheet_names(self):
+        """Get names of all reviewed sheets"""
+        data = self._load_data()
+        return [k for k, v in data["data"].items() if v.get("reviewed", True)]

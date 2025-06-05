@@ -313,12 +313,25 @@ class ReviewTab(QWidget):
         current_image = os.path.basename(self.image_paths[self.current_index])
         self.reviewed_images.add(current_image)
         self.update_review_button_state()
-        
-        # Save reviewed status
-        if self.project_path:
-            review_file = os.path.join(self.project_path, "review_status.json")
-            with open(review_file, 'w') as f:
-                json.dump(list(self.reviewed_images), f)
+        image_path = os.path.join(
+                self.project_path, "results", current_image
+            )
+        if not os.path.exists(image_path):
+                raise FileNotFoundError(f"Original image not found: {image_path}")
+            
+        img= cv2.imread(image_path)
+        try :
+            reviewed_img =utils.draw_stamp(img, input_name="First Examiner", position=(25, 100), color=(0, 0, 255))
+            cv2.imwrite(image_path, reviewed_img)
+
+            # Update the displayed image
+            self.image_paths[self.current_index] = image_path
+            self.show_current_image()
+
+            #update db
+            self.handler.mark_for_review(current_image,True)
+        except Exception as e:
+            print("Error occurs when draw stamps",e)
 
     def change_detected_answer(self):
         """Change the detected answer for selected question"""

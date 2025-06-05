@@ -130,7 +130,57 @@ def getAnswerBlocks(img):
 #             return f"answer {i+1} is not valid, it should be between 0 and 4"
     
 #     return True
+def draw_stamp(image, input_name="First Examiner", position=(50, 50), color=(0, 0, 255)):
+    """Draw a smaller, less-rotated review stamp on the image"""
+    # Convert grayscale image to BGR if needed
+    if len(image.shape) == 2:
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+    elif image.shape[2] == 1:
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+    
+    # Reduced stamp size
+    stamp_w, stamp_h = 200, 70
+    
+    # Create stamp canvas
+    stamp = np.ones((stamp_h, stamp_w, 3), dtype=np.uint8) * 255
 
+    # Draw border and texts
+    cv2.rectangle(stamp, (5, 5), (stamp_w - 5, stamp_h - 5), color, 3)
+    
+    # Main text "REVIEWED"
+    cv2.putText(stamp, "REVIEWED", 
+               (15, 35), 
+               cv2.FONT_HERSHEY_DUPLEX, 
+               0.9, color, 2, cv2.LINE_AA)
+    
+    # Examiner name (more visible)
+    cv2.putText(stamp, input_name, 
+               (15, 55), 
+               cv2.FONT_HERSHEY_SIMPLEX, 
+               0.6, color, 1, cv2.LINE_AA)
+
+    # Reduced rotation from -15° to -10°
+    matrix = cv2.getRotationMatrix2D((stamp_w // 2, stamp_h // 2), -10, 1.0)
+    rotated_stamp = cv2.warpAffine(stamp, matrix, (stamp_w, stamp_h), 
+                                 borderValue=(255, 255, 255))
+
+    # Blend onto original image
+    x, y = position
+    if y + stamp_h > image.shape[0]:
+        y = image.shape[0] - stamp_h - 10
+    if x + stamp_w > image.shape[1]:
+        x = image.shape[1] - stamp_w - 10
+    
+    roi = image[y:y + stamp_h, x:x + stamp_w]
+    gray = cv2.cvtColor(rotated_stamp, cv2.COLOR_BGR2GRAY)
+    _, mask = cv2.threshold(gray, 250, 255, cv2.THRESH_BINARY_INV)
+    mask_inv = cv2.bitwise_not(mask)
+
+    img_bg = cv2.bitwise_and(roi, roi, mask=mask_inv)
+    stamp_fg = cv2.bitwise_and(rotated_stamp, rotated_stamp, mask=mask)
+    image[y:y + stamp_h, x:x + stamp_w] = cv2.add(img_bg, stamp_fg)
+
+    return image
 #show answers on the image
 def showAnswers(img,answerIndexes,model_answers):
     secW = int(img.shape[1] / 35)
@@ -213,7 +263,6 @@ def process_omr_sheet_without_model( image, detected_answers, model_answers):
     inv_matrix = cv2.getPerspectiveTransform(pts2, pts1)
     inv_drawing = cv2.warpPerspective(drawing, inv_matrix, (img.shape[1], img.shape[0]))
     final_img = cv2.addWeighted(img, 1, inv_drawing, 1, 0)
-    cv2.putText(final_img, f"Total Marks: {total_marks}/50", (50, 700), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 250), 2)
-
+    cv2.putText(final_img, f"Total Marks: {total_marks}/50", (50, 700), cv2.FONT_HERSHEY_COMPLEX, 2, (0, 200, 0), 1)
 
     return  final_img

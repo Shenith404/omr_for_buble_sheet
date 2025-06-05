@@ -179,7 +179,7 @@ class OMRProcessor(QObject):
         inv_matrix = cv2.getPerspectiveTransform(pts2, pts1)
         inv_drawing = cv2.warpPerspective(drawing, inv_matrix, (img.shape[1], img.shape[0]))
         final_img = cv2.addWeighted(img, 1, inv_drawing, 1, 0)
-        cv2.putText(final_img, f"Total Marks: {self.total_marks}/50", (50, 700), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 250), 2)
+        cv2.putText(final_img, f"Total Marks: {self.total_marks}/50", (50, 700), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 0, 250), 1)
 
 
         return detected_answers, final_img
