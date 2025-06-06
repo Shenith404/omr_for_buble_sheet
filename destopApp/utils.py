@@ -263,6 +263,6 @@ def process_omr_sheet_without_model( image, detected_answers, model_answers):
     inv_matrix = cv2.getPerspectiveTransform(pts2, pts1)
     inv_drawing = cv2.warpPerspective(drawing, inv_matrix, (img.shape[1], img.shape[0]))
     final_img = cv2.addWeighted(img, 1, inv_drawing, 1, 0)
-    cv2.putText(final_img, f"Total Marks: {total_marks}/50", (50, 700), cv2.FONT_HERSHEY_COMPLEX, 2, (0, 200, 0), 1)
+    cv2.putText(final_img, f"Total Marks: {total_marks}/50", (50, 700), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 0, 250), 1)
 
     return  final_img

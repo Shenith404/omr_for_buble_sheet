@@ -1,4 +1,5 @@
 import os
+import json
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox,
     QPushButton, QLabel, QSizePolicy, QFileDialog,
@@ -9,6 +10,8 @@ from PySide6.QtCore import Qt, Signal
 import db  # Assuming db is a module for handling JSON data
 import utils
 import cv2
+import shutil
+
 class ReviewTab(QWidget):
     """Enhanced Review Tab with project loading and 70-30 split layout"""
     
@@ -26,8 +29,8 @@ class ReviewTab(QWidget):
         self.reviewed_images = set()
         self.setup_ui()
         self.setup_connections()
-        self.handler=None
-        self.model_answers=[]
+        self.handler = None
+        self.model_answers = []
         
     def setup_ui(self):
         """Initialize UI with 70-30 horizontal split layout"""
@@ -83,11 +86,6 @@ class ReviewTab(QWidget):
         self.lbl_results_info.setWordWrap(True)
         info_layout.addWidget(self.lbl_results_info)
         
-        # Add a button to switch to Processing tab if needed
-        self.btn_edit_processing = QPushButton("Edit Processing")
-        self.btn_edit_processing.setStyleSheet("font-weight: bold;")
-        info_layout.addWidget(self.btn_edit_processing)
-        
         info_group.setLayout(info_layout)
         
         # Assemble left panel (70%)
@@ -105,8 +103,29 @@ class ReviewTab(QWidget):
         right_layout.setContentsMargins(10, 10, 10, 10)
         right_layout.setSpacing(15)
         
+        # Download Results Button (added at top of right panel)
+        self.btn_download_results = QPushButton("Download Results")
+        self.btn_download_results.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                padding: 10px;
+                background-color: #2E7D32;
+                color: white;
+                border-radius: 5px;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #1B5E20;
+            }
+            QPushButton:disabled {
+                background-color: #a5d6a7;
+                color: #e8f5e9;
+            }
+        """)
+        right_layout.addWidget(self.btn_download_results)
+        
         # Question Selection Group
-        question_group = QGroupBox("Answer Correction")
+        question_group = QGroupBox("Change Detected Answers")
         question_layout = QVBoxLayout(question_group)
         question_layout.setSpacing(10)
         
@@ -179,11 +198,9 @@ class ReviewTab(QWidget):
         self.btn_select_project.clicked.connect(self.select_project)
         self.btn_prev.clicked.connect(self.show_previous_image)
         self.btn_next.clicked.connect(self.show_next_image)
-        self.btn_edit_processing.clicked.connect(
-            lambda: self.navigation_requested.emit(1)
-        )
         self.btn_mark_reviewed.clicked.connect(self.mark_as_reviewed)
         self.btn_change_answer.clicked.connect(self.change_detected_answer)
+        self.btn_download_results.clicked.connect(self.download_results)
 
     def select_project(self):
         """Let user select a project folder"""
@@ -213,20 +230,12 @@ class ReviewTab(QWidget):
                 if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp'))
             ]
 
-
-        #load db
-        self.handler= db.OMRJsonHandler(project_path)
-        #load model answers
-        self.model_answers=self.handler.read_model_answers()
+        # Load db
+        self.handler = db.OMRJsonHandler(project_path)
+        # Load model answers
+        self.model_answers = self.handler.read_model_answers()
         
-        # Load reviewed status
-        review_file = os.path.join(project_path, "review_status.json")
-        if os.path.exists(review_file):
-            try:
-                with open(review_file, 'r') as f:
-                    self.reviewed_images = set(json.load(f))
-            except:
-                pass
+       
         
         if self.image_paths:
             self.current_index = 0
@@ -289,7 +298,7 @@ class ReviewTab(QWidget):
         self.btn_prev.setEnabled(has_images and self.current_index > 0)
         self.btn_next.setEnabled(has_images and self.current_index < len(self.image_paths) - 1)
         self.btn_change_answer.setEnabled(has_images)
-        self.btn_edit_processing.setEnabled(has_images)
+        self.btn_download_results.setEnabled(has_images)
 
     def update_review_button_state(self):
         """Update the Mark as Reviewed button state"""
@@ -319,57 +328,52 @@ class ReviewTab(QWidget):
         if not os.path.exists(image_path):
                 raise FileNotFoundError(f"Original image not found: {image_path}")
             
-        img= cv2.imread(image_path)
-        try :
-            reviewed_img =utils.draw_stamp(img, input_name="First Examiner", position=(25, 100), color=(0, 0, 255))
+        img = cv2.imread(image_path)
+        try:
+            reviewed_img = utils.draw_stamp(img, input_name="First Examiner", position=(25, 100), color=(0, 0, 255))
             cv2.imwrite(image_path, reviewed_img)
 
             # Update the displayed image
             self.image_paths[self.current_index] = image_path
             self.show_current_image()
 
-            #update db
-            self.handler.mark_for_review(current_image,True)
+            # Update db
+            self.handler.mark_for_review(current_image, True)
         except Exception as e:
-            print("Error occurs when draw stamps",e)
+            print("Error occurs when draw stamps", e)
 
     def change_detected_answer(self):
         """Change the detected answer for selected question"""
         if not self.image_paths:
             return
-        #disable button to prevent multiple clicks
+        # Disable button to prevent multiple clicks
         self.btn_change_answer.setEnabled(False)  # Disable button during processing
 
         current_image = os.path.basename(self.image_paths[self.current_index])
         question_num = int(self.question_combo.currentText())
         new_answer = int(self.answer_combo.currentText())
         
-        # Emit signal to notify about answer change
-        #self.answer_modified.emit(current_image, question_num, new_answer)
-
-        #update the answer in the db
+        # Update the answer in the db
         try:
-            new_detected_answers=self.handler.update_correction(
+            new_detected_answers = self.handler.update_correction(
                 current_image,
                 question_num-1,  # Convert to 0-based index
-                new_answer+1  #detected answers saved as  1->2 2->3 3->4 4->5 and no answers saved as -1
-
+                new_answer+1  # Detected answers saved as 1->2 2->3 3->4 4->5 and no answers saved as -1
             )
 
-            #get original image from original_images folder
+            # Get original image from original_images folder
             original_image_path = os.path.join(
                 self.project_path, "original_images", current_image
             )
             if not os.path.exists(original_image_path):
                 raise FileNotFoundError(f"Original image not found: {original_image_path}")
             
-            img= cv2.imread(original_image_path)
+            img = cv2.imread(original_image_path)
             # Update the image with new answer
-            result_img= utils.process_omr_sheet_without_model(
+            result_img = utils.process_omr_sheet_without_model(
                 img,
                 new_detected_answers,
                 self.model_answers
-
             )
             # Save the updated image back to results folder
             result_image_path = os.path.join(
@@ -398,12 +402,63 @@ class ReviewTab(QWidget):
             )
             self.btn_change_answer.setEnabled(True)
 
-
-
-
-
-        #enable button after processing
+        # Enable button after processing
         self.btn_change_answer.setEnabled(True)
+
+    def download_results(self):
+        """Handle downloading of results to selected directory"""
+        if not self.project_path:
+            QMessageBox.warning(self, "No Project", "Please load a project first")
+            return
+            
+        # Let user select download directory
+        download_dir = QFileDialog.getExistingDirectory(
+            self,
+            "Select Download Directory",
+            "",
+            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks
+        )
+        
+        if not download_dir:
+            return
+            
+        try:
+            #get the project title using project path
+            p_title=self.project_path.split(os.sep)[-1]
+            # Create results directory in download location
+            dest_dir = os.path.join(download_dir, p_title + "marked_sheets")
+            os.makedirs(dest_dir, exist_ok=True)
+            
+            # Copy all result images
+            results_src = os.path.join(self.project_path, "results")
+            if os.path.exists(results_src):
+                for file in os.listdir(results_src):
+                    src_file = os.path.join(results_src, file)
+                    if os.path.isfile(src_file):
+                        shutil.copy2(src_file, dest_dir)
+            
+            # Copy JSON data files
+            json_files = [f for f in os.listdir(self.project_path) if f.endswith('.json')]
+            for json_file in json_files:
+                src_file = os.path.join(self.project_path, json_file)
+                shutil.copy2(src_file, dest_dir)
+
+            #create excel sheet
+            self.handler.export_to_excel(os.path.join(dest_dir, p_title+"result.xlsx"))
+
+            QMessageBox.information(
+                self,
+                "Download Complete",
+                f"All results downloaded successfully to:\n{dest_dir}",
+                QMessageBox.Ok
+            )
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Download Failed",
+                f"Error downloading results: {str(e)}",
+                QMessageBox.Ok
+            )
 
     def resizeEvent(self, event):
         """Handle window resize to maintain image display"""

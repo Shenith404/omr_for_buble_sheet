@@ -468,7 +468,7 @@ class ProcessingTab(QWidget):
             os.makedirs(results_dir, exist_ok=True)
             
             # Initialize CSV file
-            csv_path = os.path.join(results_dir, "answers.csv")
+           # csv_path = os.path.join(results_dir, "answers.csv")
 
             # Initialize json file
             self.handler = db.OMRJsonHandler(self.project_path)
@@ -479,9 +479,9 @@ class ProcessingTab(QWidget):
             self.handler.save_model_answers(self.model_answers)
 
 
-            with open(csv_path, 'w', newline='') as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerow(["Filename"] + [f"Q{i+1}" for i in range(50)])
+            # with open(csv_path, 'w', newline='') as csvfile:
+            #     writer = csv.writer(csvfile)
+            #     writer.writerow(["Filename"] + [f"Q{i+1}" for i in range(50)])
             
             # Reset processing state
             self.processed_images.clear()
@@ -551,17 +551,18 @@ class ProcessingTab(QWidget):
             cv2.imwrite(output_path, marked_image)
             
             # 3. Save answers to CSV immediately
-            csv_path = os.path.join(results_dir, "answers.csv")
-            file_exists = os.path.exists(csv_path)
+            # csv_path = os.path.join(results_dir, "answers.csv")
+            # file_exists = os.path.exists(csv_path)
             
-            with open(csv_path, 'a', newline='') as csvfile:
-                writer = csv.writer(csvfile)
-                if not file_exists:
-                    writer.writerow(["Filename", "TotalMarks", ""] + [f"Q{i+1}" for i in range(len(answers))])
+            # with open(csv_path, 'a', newline='') as csvfile:
+            #     writer = csv.writer(csvfile)
+            #     if not file_exists:
+            #         writer.writerow(["Filename", "TotalMarks", ""] + [f"Q{i+1}" for i in range(len(answers))])
                 
-                # Convert answers to 1-based index (0 for unanswered)
-                corrected_answers = [ans-1 if ans != -1 else 0 for ans in answers]
-                writer.writerow([filename, total_marks, ""] + corrected_answers)
+            #     # Convert answers to 1-based index (0 for unanswered)
+            #     corrected_answers = [ans-1 if ans != -1 else 0 for ans in answers]
+            #     writer.writerow([filename, total_marks, ""] + corrected_answers)
+            
             
             # 4. Save answers in a json file
             #self.handler = db.OMRJsonHandler(self.project_path)
