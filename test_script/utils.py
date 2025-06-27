@@ -122,25 +122,23 @@ def getAnswerBlocks(img):
 
 
 #save images in new folder
-def saveImages(answerBlocks, ImageName, boxNumber):
+def saveImages(answerBlocks, boxNumber):
     # Ensure directories exist
-    save_path_cross_Images = r"E:\University\fyp\mcq_test_1\cross_Images"
-    save_path_empty_Images = r"E:\University\fyp\mcq_test_1\empty_Images"
+    save_path_cross_Images = r"D:\empty_images"
     os.makedirs(save_path_cross_Images, exist_ok=True)
-    os.makedirs(save_path_empty_Images, exist_ok=True)
 
     for i, block in enumerate(answerBlocks):
-        totalPixels = cv2.countNonZero(block)
+        #totalPixels = cv2.countNonZero(block)
         
         # Generate a unique filename using timestamp + UUID
         unique_id = str(uuid.uuid4())[:8]  # First 8 characters of UUID
         timestamp = int(time.time())  # Current timestamp
-        filename = f"{ImageName}_{boxNumber + i}_{timestamp}_{unique_id}.jpg"
+        filename = f"{boxNumber + i}_{timestamp}_{unique_id}.jpg"
 
-        if totalPixels < 550:  # Empty image condition
-            file_path = os.path.join(save_path_empty_Images, filename)
-        else:  # Marked image condition
-            file_path = os.path.join(save_path_cross_Images, filename)
+        #if totalPixels < 550:  # Empty image condition
+        file_path = os.path.join(save_path_cross_Images, filename)
+        # else:  # Marked image condition
+        #     file_path = os.path.join(save_path_cross_Images, filename)
 
         cv2.imwrite(file_path, block)
 
