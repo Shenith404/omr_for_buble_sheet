@@ -5,7 +5,7 @@ import os
 import model
 
 #constants
-path ='../images/test_16.jpeg'
+path ='../images/test_23.jpeg'
 widhtImg = 1025
 hightImg = 760
 webCamFeed = True
@@ -54,10 +54,12 @@ try:
         
         #Apply threshold
         imgWarpGray=cv2.cvtColor(imgWarpColored,cv2.COLOR_BGR2GRAY)
+        imgWarpGray =cv2.convertScaleAbs(imgWarpGray, alpha=1.5, beta=50)
+
         imgThresh=cv2.threshold(imgWarpGray,170,255,cv2.THRESH_BINARY_INV)[1]
 
         #get answers boxes
-        boxes =utils.verticalSplitBoxes(imgThresh)
+        boxes =utils.verticalSplitBoxes(imgWarpGray)
 
 
 
@@ -77,7 +79,7 @@ try:
                 if cv2.countNonZero(answerBoxes[j]) > 0:
                     label, confidence = model.classify_bubble(answerBoxes[j])
                     answerWithModels.append({"box_index": i+1, "answer": j+2, "label": label})
-                    if label=="Crossed_Bubble":
+                    if label=="cross_Images":
                         answerLabels.append(j+2)
                         
             #if answerlabels have only one crossed bubble then add the index of the crossed bubble

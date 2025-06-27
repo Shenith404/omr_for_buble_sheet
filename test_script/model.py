@@ -4,7 +4,7 @@ from tensorflow.keras.preprocessing.image import img_to_array
 import cv2
 
 # Load trained model
-MODEL_PATH = "bubble_cnn_model copy.keras"
+MODEL_PATH = "best_model.h5"
 # IMG_PATH = "crossImg.jpg"
 
 model = load_model(MODEL_PATH)
@@ -18,7 +18,7 @@ print("Model expects input shape:", model.input_shape)  # Debugging step
 # Resize image to match model input size (64x64)
 TARGET_SIZE = (64, 64)
 # Class labels
-class_labels = ["Crossed_Bubble", "Empty_Bubble", "Other", "Shaded_Bubble"]
+class_labels = ["cross_Images", "empty_images", "shaded_images"]
 
 def classify_bubble(image):
     img = cv2.resize(image, TARGET_SIZE)

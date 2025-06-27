@@ -133,6 +133,7 @@ class OMRProcessor(QObject):
 
         # Step 4: Adaptive Thresholding for better robustness
         warped_gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
+
         thresh = cv2.threshold(warped_gray, 170, 255, cv2.THRESH_BINARY_INV)[1]
 
        # totalPixelSize =cv2.countNonZero(thresh)
@@ -165,7 +166,7 @@ class OMRProcessor(QObject):
                 # Step 5: Get crossed bubble index (if only one)
                 marked = []
                 for idx, (label, _) in zip(indices, predictions):
-                    if label == "Crossed_Bubble":
+                    if label == "cross_Images":
                         marked.append(idx + 2)  # 1-based index since we skipped first 2 blocks
 
                 detected_answers.append(marked[0] if len(marked) == 1 else -1)

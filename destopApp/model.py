@@ -13,17 +13,13 @@ def get_model_path():
         base_path = sys._MEIPASS
     else:
         base_path = os.path.dirname(__file__)
-    return os.path.join(base_path, "models", "bubble_cnn_model.keras")
+    return os.path.join(base_path, "models", "best_model.h5")
 
 model = load_model(get_model_path())
 
 # Class labels
-class_labels = [
-    "Crossed_Bubble", 
-    "Empty_Bubble", 
-    "Other", 
-    "Shaded_Bubble"
-]
+class_labels = ["cross_Images", "empty_images", "shaded_images"]
+
 
 def classify_bubble(image):
     """Classify a single bubble image using the trained model"""
