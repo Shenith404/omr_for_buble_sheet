@@ -200,18 +200,18 @@ def showAnswers(img,answerIndexes,model_answers):
 
             # 1. Draw yellow cross for user answer
             if myAns != -1:
-                cv2.line(img, (cx - 10, cy - 10), (cx + 10, cy + 10), (0, 255, 255), 2)  # Yellow line
-                cv2.line(img, (cx - 10, cy + 10), (cx + 10, cy - 10), (0, 255, 255), 2)  # Yellow line
+                cv2.line(img, (cx , cy - 6), (cx + 12, cy + 6), (0, 255, 255), 2)  # Yellow line
+                cv2.line(img, (cx , cy + 6), (cx + 12, cy - 6), (0, 255, 255), 2)  # Yellow line
 
             # 2. Draw square above cross
             correct_cx = (correctAns * secW + 7 * x * secW) + secW // 2
             if myAns == correctAns:
                 # Green square for correct answer
                 totalMarks+=1
-                cv2.rectangle(img, (cx - 10, cy - 10), (cx + 10, cy + 10), (0, 255, 0), cv2.FILLED)
+                cv2.rectangle(img, (cx , cy - 6), (cx + 12, cy + 6), (0, 255, 0), cv2.FILLED)
             else:
                 # Red square for incorrect answer
-                cv2.rectangle(img, (correct_cx - 10, cy - 10), (correct_cx + 10, cy + 10), (0, 0, 255), cv2.FILLED)
+                cv2.rectangle(img, (correct_cx , cy - 6), (correct_cx + 10, cy + 10), (0, 0, 255), cv2.FILLED)
 
 
     return img,totalMarks
