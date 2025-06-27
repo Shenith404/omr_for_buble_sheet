@@ -133,7 +133,8 @@ class OMRProcessor(QObject):
 
         # Step 4: Adaptive Thresholding for better robustness
         warped_gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
-
+        #increase brightness
+        #warped_gray =cv2.convertScaleAbs(warped_gray, alpha=1, beta=50)
         thresh = cv2.threshold(warped_gray, 170, 255, cv2.THRESH_BINARY_INV)[1]
 
        # totalPixelSize =cv2.countNonZero(thresh)
@@ -144,15 +145,24 @@ class OMRProcessor(QObject):
 
         # Step 1: Split into boxes
         boxes = utils.verticalSplitBoxes(warped_gray)
+        thresh_boxes =utils.verticalSplitBoxes(thresh)
         detected_answers = []
 
         # Step 2: For each question box
-        for box in boxes:
+        for i,box in enumerate(boxes):
             if self._cancel_requested:
                 raise RuntimeError("Processing cancelled")
 
             # Get answer bubbles (skip unwanted blocks)
-            answer_blocks = utils.getAnswerBlocks(box)[2:6]  # Adjust if needed
+            answer_blocks = utils.getAnswerBlocks(boxes[i])[2:6]  # Adjust if needed
+            thresh_answer_blocks =utils.getAnswerBlocks(thresh_boxes[i])[2:6]
+            
+            #if total pixel value of thresh_answer_block is greater than 240 replace relevent anwer_block by increasing constrast
+            for j, tab in enumerate(thresh_answer_blocks):
+                p_val = cv2.countNonZero(tab)
+                if p_val > 1700:  # Careful: You had a typo (944480), it should be 255*64*64 = 1044480
+                    print("psfds", p_val)
+                    answer_blocks[j] = cv2.convertScaleAbs(answer_blocks[j], alpha=1.5, beta=50)
 
             # Step 3: Collect non-empty blocks for batch processing
             valid_blocks = [(j, block) for j, block in enumerate(answer_blocks) if cv2.countNonZero(block) > 0]

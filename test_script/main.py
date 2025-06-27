@@ -5,7 +5,7 @@ import os
 import model
 
 #constants
-path ='../images/test_23.jpeg'
+path ='../images/test_21.jpg'
 widhtImg = 1025
 hightImg = 760
 webCamFeed = True
@@ -54,12 +54,14 @@ try:
         
         #Apply threshold
         imgWarpGray=cv2.cvtColor(imgWarpColored,cv2.COLOR_BGR2GRAY)
-        imgWarpGray =cv2.convertScaleAbs(imgWarpGray, alpha=1.5, beta=50)
+        imgWarpGray =cv2.convertScaleAbs(imgWarpGray, alpha=1, beta=50)
 
         imgThresh=cv2.threshold(imgWarpGray,170,255,cv2.THRESH_BINARY_INV)[1]
 
         #get answers boxes
         boxes =utils.verticalSplitBoxes(imgWarpGray)
+        thresh_boxes =utils.verticalSplitBoxes(imgThresh)
+
 
 
 
@@ -69,14 +71,21 @@ try:
 
         for i in range(len(boxes)):
             answerBoxes = utils.getAnswerBlocks(boxes[i])
+            thresh_answer_blocks =utils.getAnswerBlocks(thresh_boxes[i])[2:6]
+
+         
 
             # Ignore indices 0, 1, and 6
             answerBoxes = answerBoxes[2:6]
+            
+            print("vadf",cv2.countNonZero(thresh_answer_blocks[0]),i)
+         
+               
             #get answer labels
             answerLabels=[]
             for j in range(len(answerBoxes)):
                 #check if the bubble is crossed using the model
-                if cv2.countNonZero(answerBoxes[j]) > 0:
+                if cv2.countNonZero(answerBoxes[j]) >         0:
                     label, confidence = model.classify_bubble(answerBoxes[j])
                     answerWithModels.append({"box_index": i+1, "answer": j+2, "label": label})
                     if label=="cross_Images":
