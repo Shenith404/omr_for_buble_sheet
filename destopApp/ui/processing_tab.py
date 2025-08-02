@@ -102,7 +102,7 @@ class OMRProcessor(QObject):
         # Step 1: Preprocessing with optimized operations
         img = cv2.resize(image, (self.widthImg, self.heightImg))
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        blur = cv2.GaussianBlur(gray, (5, 5), 1)
+        blur = cv2.GaussianBlur(gray, (3, 3), 1)
         edges = cv2.Canny(blur, 10, 50)
 
         #disable  mark button when processing
@@ -135,17 +135,26 @@ class OMRProcessor(QObject):
         warped_gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
         #increase brightness
         #warped_gray =cv2.convertScaleAbs(warped_gray, alpha=1, beta=50)
-        thresh = cv2.threshold(warped_gray, 170, 255, cv2.THRESH_BINARY_INV)[1]
+       
 
        # totalPixelSize =cv2.countNonZero(thresh)
        # print("Total Pixel Size: ",totalPixelSize)
 
         if self._cancel_requested:
             raise RuntimeError("Processing cancelled")
+        thresh = cv2.adaptiveThreshold(warped_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV, 11, 2)
+
+        # Morphological Opening (remove small white dots)
+        kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+        # opened = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel_open, iterations=1)
+        erosion_image =cv2.erode(thresh, kernel_open, iterations=1)
+
+
+      
 
         # Step 1: Split into boxes
-        boxes = utils.verticalSplitBoxes(warped_gray)
-        thresh_boxes =utils.verticalSplitBoxes(thresh)
+        boxes = utils.verticalSplitBoxes(erosion_image)
+        #thresh_boxes =utils.verticalSplitBoxes(thresh)
         detected_answers = []
 
         # Step 2: For each question box
@@ -155,14 +164,14 @@ class OMRProcessor(QObject):
 
             # Get answer bubbles (skip unwanted blocks)
             answer_blocks = utils.getAnswerBlocks(boxes[i])[2:6]  # Adjust if needed
-            thresh_answer_blocks =utils.getAnswerBlocks(thresh_boxes[i])[2:6]
+            #thresh_answer_blocks =utils.getAnswerBlocks(thresh_boxes[i])[2:6]
             
             #if total pixel value of thresh_answer_block is greater than 240 replace relevent anwer_block by increasing constrast
-            for j, tab in enumerate(thresh_answer_blocks):
-                p_val = cv2.countNonZero(tab)
-                if p_val > 1700:  # Careful: You had a typo (944480), it should be 255*64*64 = 1044480
-                    print("psfds", p_val)
-                    answer_blocks[j] = cv2.convertScaleAbs(answer_blocks[j], alpha=1.5, beta=50)
+            # for j, tab in enumerate(thresh_answer_blocks):
+            #     p_val = cv2.countNonZero(tab)
+            #     if p_val > 1700:  # Careful: You had a typo (944480), it should be 255*64*64 = 1044480
+            #         print("psfds", p_val)
+            #         answer_blocks[j] = cv2.convertScaleAbs(answer_blocks[j], alpha=1.5, beta=50)
 
             # Step 3: Collect non-empty blocks for batch processing
             valid_blocks = [(j, block) for j, block in enumerate(answer_blocks) if cv2.countNonZero(block) > 0]
@@ -176,7 +185,7 @@ class OMRProcessor(QObject):
                 # Step 5: Get crossed bubble index (if only one)
                 marked = []
                 for idx, (label, _) in zip(indices, predictions):
-                    if label == "cross_Images":
+                    if label == "cross_sheets_adpthresh":
                         marked.append(idx + 2)  # 1-based index since we skipped first 2 blocks
 
                 detected_answers.append(marked[0] if len(marked) == 1 else -1)

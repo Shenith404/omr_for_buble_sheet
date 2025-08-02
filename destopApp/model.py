@@ -13,12 +13,12 @@ def get_model_path():
         base_path = sys._MEIPASS
     else:
         base_path = os.path.dirname(__file__)
-    return os.path.join(base_path, "models", "best_model.h5")
+    return os.path.join(base_path, "models", "model_adpthresh_2.h5")
 
 model = load_model(get_model_path())
 
 # Class labels
-class_labels = ["cross_Images", "empty_images", "shaded_images"]
+class_labels = ['cross_sheets_adpthresh', 'empty_sheets_adpthresh', 'shaded_sheets_adpthresh']
 
 
 def classify_bubble(image):
