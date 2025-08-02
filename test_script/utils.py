@@ -124,7 +124,7 @@ def getAnswerBlocks(img):
 #save images in new folder
 def saveImages(answerBlocks, boxNumber):
     # Ensure directories exist
-    save_path_cross_Images = r"D:\empty_images"
+    save_path_cross_Images = r"D:\shaded_sheets_adpthresh"
     os.makedirs(save_path_cross_Images, exist_ok=True)
 
     for i, block in enumerate(answerBlocks):
