@@ -5,7 +5,7 @@ import os
 import model
 
 #constants
-path ='../images/test_21.jpg'
+path ='../images/test_22.jpeg'
 widhtImg = 1025
 hightImg = 760
 webCamFeed = True
@@ -23,7 +23,7 @@ imgContours=img.copy()
 imgBiggestContours=img.copy()
 img=cv2.resize(img,(widhtImg,hightImg)) 
 imgGray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)    #convert image to gray
-imgBlur=cv2.GaussianBlur(imgGray,(5,5),1)       #apply blur(image_source, kernel_size, sigma)
+imgBlur=cv2.GaussianBlur(imgGray,(3,3),1)       #apply blur(image_source, kernel_size, sigma)
 imgCanny=cv2.Canny(imgBlur,10,50)               #apply canny edge detection (image_source, threshold1, threshold2)
 
 try:
@@ -56,11 +56,17 @@ try:
         imgWarpGray=cv2.cvtColor(imgWarpColored,cv2.COLOR_BGR2GRAY)
         imgWarpGray =cv2.convertScaleAbs(imgWarpGray, alpha=1, beta=50)
 
-        imgThresh=cv2.threshold(imgWarpGray,170,255,cv2.THRESH_BINARY_INV)[1]
+        thresh = cv2.adaptiveThreshold(imgWarpGray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV, 11, 2)
+
+        # Morphological Opening (remove small white dots)
+        kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+        # opened = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel_open, iterations=1)
+        erosion_image =cv2.erode(thresh, kernel_open, iterations=1)
+
 
         #get answers boxes
-        boxes =utils.verticalSplitBoxes(imgWarpGray)
-        thresh_boxes =utils.verticalSplitBoxes(imgThresh)
+        boxes =utils.verticalSplitBoxes(erosion_image)
+        #thresh_boxes =utils.verticalSplitBoxes(erosion_image)
 
 
 
@@ -71,14 +77,14 @@ try:
 
         for i in range(len(boxes)):
             answerBoxes = utils.getAnswerBlocks(boxes[i])
-            thresh_answer_blocks =utils.getAnswerBlocks(thresh_boxes[i])[2:6]
+            #thresh_answer_blocks =utils.getAnswerBlocks(thresh_boxes[i])[2:6]
 
          
 
             # Ignore indices 0, 1, and 6
             answerBoxes = answerBoxes[2:6]
             
-            print("vadf",cv2.countNonZero(thresh_answer_blocks[0]),i)
+           # print("vadf",cv2.countNonZero(thresh_answer_blocks[0]),i)
          
                
             #get answer labels
@@ -88,7 +94,7 @@ try:
                 if cv2.countNonZero(answerBoxes[j]) >         0:
                     label, confidence = model.classify_bubble(answerBoxes[j])
                     answerWithModels.append({"box_index": i+1, "answer": j+2, "label": label})
-                    if label=="cross_Images":
+                    if label=="cross_sheets_adpthresh":
                         answerLabels.append(j+2)
                         
             #if answerlabels have only one crossed bubble then add the index of the crossed bubble
@@ -128,7 +134,7 @@ try:
 
         imgBlank = np.zeros_like(img)
 
-        imageArray=([imgContours,imgBiggestContours,imgWarpColored,imgThresh] ,
+        imageArray=([imgContours,imgBiggestContours,imgWarpColored,erosion_image] ,
             [imageResult,imageRowDrawing,imgFinal,imgBlank])
 except:
     imgBlank = np.zeros_like(img)
@@ -139,7 +145,7 @@ except:
 
 
 
-imageStacked =utils.stackImages(imageArray,0.3)
+imageStacked =utils.stackImages(imageArray,0.5)
 
 #display image
 cv2.imshow('Stack Images', imageStacked)
