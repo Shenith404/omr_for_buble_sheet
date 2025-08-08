@@ -12,7 +12,9 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropou
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from sklearn.utils.class_weight import compute_class_weight
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from PIL import Image
+import pickle
 
 # Set dataset paths
 dataset_path = "dataset/"
@@ -49,13 +51,16 @@ def split_dataset():
             shutil.copy(src_path, dst_path)
     print("Dataset split completed.")
 
-# Split dataset
-split_dataset()
+# Split dataset only if not already split
+if (not os.path.exists(train_path)) or (not os.path.exists(val_path)) or (not os.path.exists(test_path)):
+    split_dataset()
+else:
+    print("Dataset already split, skipping splitting.")
 
-# Data Augmentation
-print("Setting up data augmentation...")
-datagen = ImageDataGenerator(
-    rescale=1.0/255.0,  # Normalize pixel values
+# Data Augmentation - for training only
+print("Setting up data augmentation for training set...")
+train_datagen = ImageDataGenerator(
+    rescale=1.0/255.0,  
     rotation_range=25,
     width_shift_range=0.2,
     height_shift_range=0.2,
@@ -65,7 +70,11 @@ datagen = ImageDataGenerator(
     fill_mode='nearest'
 )
 
-train_generator = datagen.flow_from_directory(
+# Validation and Test data generators - only rescaling
+val_datagen = ImageDataGenerator(rescale=1.0/255.0)
+test_datagen = ImageDataGenerator(rescale=1.0/255.0)
+
+train_generator = train_datagen.flow_from_directory(
     train_path, 
     target_size=(64, 64), 
     batch_size=32, 
@@ -73,7 +82,7 @@ train_generator = datagen.flow_from_directory(
     color_mode='grayscale'
 )
 
-val_generator = datagen.flow_from_directory(
+val_generator = val_datagen.flow_from_directory(
     val_path, 
     target_size=(64, 64), 
     batch_size=32, 
@@ -81,7 +90,7 @@ val_generator = datagen.flow_from_directory(
     color_mode='grayscale'
 )
 
-test_generator = datagen.flow_from_directory(
+test_generator = test_datagen.flow_from_directory(
     test_path, 
     target_size=(64, 64), 
     batch_size=32, 
@@ -92,11 +101,10 @@ test_generator = datagen.flow_from_directory(
 
 # Dynamically calculate class distribution based on the dataset
 print("Calculating class distribution from the dataset...")
-
 labels_count = {}
 for category in os.listdir(dataset_path):
     category_path = os.path.join(dataset_path, category)
-    if os.path.isdir(category_path):  # Check if it's a directory (class)
+    if os.path.isdir(category_path):
         labels_count[category] = len(os.listdir(category_path))
 
 # Print class distribution
@@ -159,7 +167,7 @@ model = Sequential([
     Flatten(),
     Dense(512, activation='relu'),
     Dropout(0.5),
-    Dense(3, activation='softmax')  # 4 output classes
+    Dense(len(labels_count), activation='softmax')  # adjust output units dynamically
 ])
 
 # Compile Model
@@ -170,13 +178,39 @@ model.compile(
     metrics=['accuracy']
 )
 
-# Train Model with Class Weights
+# Callbacks for training
+early_stopping = EarlyStopping(
+    monitor='val_loss',
+    patience=10,
+    restore_best_weights=True,
+    verbose=1
+)
+
+checkpoint = ModelCheckpoint(
+    "best_model.keras", 
+    monitor='val_loss',
+    save_best_only=True,
+    verbose=1
+)
+
+reduce_lr = ReduceLROnPlateau(
+    monitor='val_loss',
+    factor=0.5,
+    patience=5,
+    min_lr=1e-6,
+    verbose=1
+)
+
+callbacks = [early_stopping, checkpoint, reduce_lr]
+
+# Train Model with Class Weights and callbacks
 print("Training the model...")
 history = model.fit(
-    train_generator, 
-    epochs=100,  # Increased epochs
-    validation_data=val_generator, 
-    class_weight=class_weights_dict
+    train_generator,
+    epochs=100,
+    validation_data=val_generator,
+    class_weight=class_weights_dict,
+    callbacks=callbacks
 )
 
 # Evaluate Model on Test Set
@@ -184,7 +218,62 @@ print("Evaluating the model on the test set...")
 test_loss, test_acc = model.evaluate(test_generator)
 print(f"Test Accuracy: {test_acc * 100:.2f}%")
 
-# Save Model
-print("Saving the model...")
-model.save("bubble_cnn_model.keras")
+# === Save Training History ===
+with open("training_history.pkl", "wb") as f:
+    pickle.dump(history.history, f)
+print("✅ Training history saved as 'training_history.pkl'")
 
+# === Load training history back (optional) ===
+with open("training_history.pkl", "rb") as f:
+    history_dict = pickle.load(f)
+
+# Simple smoothing function for better plot visualization
+def smooth_curve(points, factor=0.8):
+    smoothed_points = []
+    for point in points:
+        if smoothed_points:
+            previous = smoothed_points[-1]
+            smoothed_points.append(previous * factor + point * (1 - factor))
+        else:
+            smoothed_points.append(point)
+    return smoothed_points
+
+val_acc_smoothed = smooth_curve(history_dict['val_accuracy'])
+val_loss_smoothed = smooth_curve(history_dict['val_loss'])
+
+# Create output directory for graphs
+output_dir = "training_graphs"
+os.makedirs(output_dir, exist_ok=True)
+
+# === Plot and Save Accuracy Graph ===
+plt.figure(figsize=(10, 5))
+plt.plot(history_dict['accuracy'], label='Train Accuracy')
+plt.plot(val_acc_smoothed, label='Validation Accuracy (Smoothed)')
+plt.title("Model Accuracy Over Epochs")
+plt.xlabel("Epoch")
+plt.ylabel("Accuracy")
+plt.legend()
+plt.grid(True)
+accuracy_path = os.path.join(output_dir, "accuracy_graph.png")
+plt.savefig(accuracy_path)
+plt.close()
+print(f"✅ Accuracy graph saved at: {accuracy_path}")
+
+# === Plot and Save Loss Graph ===
+plt.figure(figsize=(10, 5))
+plt.plot(history_dict['loss'], label='Train Loss')
+plt.plot(val_loss_smoothed, label='Validation Loss (Smoothed)')
+plt.title("Model Loss Over Epochs")
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.legend()
+plt.grid(True)
+loss_path = os.path.join(output_dir, "loss_graph.png")
+plt.savefig(loss_path)
+plt.close()
+print(f"✅ Loss graph saved at: {loss_path}")
+
+# Save final model
+print("Saving the final model...")
+model.save("bubble_cnn_model.keras")
+print("✅ Model saved as 'bubble_cnn_model.keras'")
