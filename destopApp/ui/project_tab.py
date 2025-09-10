@@ -276,6 +276,7 @@ class ProjectTab(QWidget):
             self.current_project = project_path
             self.source_group.setEnabled(True)
             self.btn_link.setEnabled(True)
+            self.btn_add.setEnabled(True)
             self.status_label.setText(f"Project created: {project_path}")
             self.project_created.emit(project_path)
 
