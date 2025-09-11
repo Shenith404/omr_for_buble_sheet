@@ -2,80 +2,176 @@ import os
 import csv
 import cv2
 from PySide6.QtWidgets import (
-    QMainWindow, QTabWidget, QStatusBar, 
-    QMessageBox, QVBoxLayout, QWidget, 
-    QMenuBar, QMenu, QFileDialog, QPushButton, QLabel, QHBoxLayout
+    QMainWindow, QTabWidget, QStatusBar,
+    QMessageBox, QVBoxLayout, QWidget,
+    QMenuBar, QMenu, QFileDialog, QLabel, QProgressBar
 )
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 from ui.project_tab import ProjectTab
 from ui.processing_tab import ProcessingTab
 from ui.review_tab import ReviewTab
 
+
 class MainWindow(QMainWindow):
     def __init__(self):
-            super().__init__()
-            self.setWindowTitle("OMR Scanner Pro")
-            self.resize(1200, 800)
-            
-            # Initialize application state
-            self.current_project = None
-            self.current_images = []
-            self.linked_images = False
-            
-            # Initialize tabs
-            self.project_tab = ProjectTab()
-            self.processing_tab = ProcessingTab()
-            self.review_tab = ReviewTab()  # Add ReviewTab
-            
-            # Setup UI
-            self.setup_ui()
-            self.setup_connections()
-            
-            # Ensure all tabs are enabled
-            self.tab_widget.setTabEnabled(0, True)
-            self.tab_widget.setTabEnabled(1, True)
+        super().__init__()
+        self.setWindowTitle("OMR Scanner Pro")
+        self.resize(1200, 800)
+
+        # App state
+        self.current_project = None
+        self.current_images = []
+        self.linked_images = False
+
+        # Tabs
+        self.project_tab = ProjectTab()
+        self.processing_tab = ProcessingTab()
+        self.review_tab = ReviewTab()
+
+        # Setup UI
+        self.setup_ui()
+        self.setup_connections()
+
+        # Disable until project is active
+        self.tab_widget.setTabEnabled(1, False)
+        self.tab_widget.setTabEnabled(2, False)
+
+        self.update_ui_state()
+
+        # Apply dark theme
+        self.apply_dark_theme()
 
 
     def setup_ui(self):
         # Menu bar
         self.setup_menu()
-        
-        # Central widget
+
+        # Central layout
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
-        main_layout.setContentsMargins(5, 5, 5, 5)
-        
+        main_layout.setContentsMargins(12, 12, 12, 12)
+        main_layout.setSpacing(8)
+
         # Tab widget
         self.tab_widget = QTabWidget()
         self.tab_widget.setDocumentMode(True)
-        
-        # Add tabs
-        self.tab_widget.addTab(self.project_tab, "📁 Project")
-        self.tab_widget.addTab(self.processing_tab, "🔍 Processing")
-        self.tab_widget.addTab(self.review_tab, "🖼️ Review")  # Add Review tab
-        
-        # Remove the tab restriction
-        # self.tab_widget.setTabEnabled(1, False)  # Comment out or remove this line
-        
+
+        self.tab_widget.addTab(self.project_tab, "Project")
+        self.tab_widget.addTab(self.processing_tab, "Processing")
+        self.tab_widget.addTab(self.review_tab, "Review")
+
         main_layout.addWidget(self.tab_widget)
-        
+
         # Status bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
-        self.status_bar.showMessage("Ready to create or open a project")
+        self.status_label = QLabel("Ready to create or open a project")
+        self.status_bar.addPermanentWidget(self.status_label, 1)
+
+        self.progress = QProgressBar()
+        self.progress.setFixedWidth(200)
+        self.progress.setValue(0)
+        self.progress.setVisible(False)
+        self.status_bar.addPermanentWidget(self.progress)
+
+
+    def apply_dark_theme(self):
+        """Professional dark theme (VS Code / JetBrains style)"""
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #1e1e1e;
+                color: #e0e0e0;
+            }
+            QWidget {
+                background-color: #1e1e1e;
+                color: #e0e0e0;
+                font-size: 13px;
+                font-family: 'Segoe UI', 'Inter', sans-serif;
+            }
+            QTabWidget::pane {
+                border: 1px solid #2d2d2d;
+                background: #252526;
+                border-radius: 6px;
+            }
+            QTabBar::tab {
+                background: #2d2d2d;
+                color: #cfcfcf;
+                border: 1px solid #2d2d2d;
+                padding: 8px 20px;
+                margin-right: 2px;
+            }
+            QTabBar::tab:selected {
+                background: #1e1e1e;
+                border-top: 3px solid #0a84ff;
+                color: #ffffff;
+                font-weight: 600;
+            }
+            QTabBar::tab:hover {
+                background: #333333;
+            }
+            QStatusBar {
+                background: #181818;
+                border-top: 1px solid #2d2d2d;
+                color: #9c9c9c;
+                font-size: 12px;
+            }
+            QLabel {
+                color: #cfcfcf;
+            }
+            QMenuBar {
+                background: #252526;
+                color: #dcdcdc;
+                font-size: 13px;
+                border-bottom: 1px solid #2d2d2d;
+            }
+            QMenuBar::item:selected {
+                background: #0a84ff;
+                color: #ffffff;
+            }
+            QMenu {
+                background: #252526;
+                border: 1px solid #2d2d2d;
+                color: #dcdcdc;
+            }
+            QMenu::item:selected {
+                background: #0a84ff;
+                color: #ffffff;
+            }
+            QProgressBar {
+                border: 1px solid #2d2d2d;
+                border-radius: 4px;
+                text-align: center;
+                font-size: 11px;
+                background: #2d2d2d;
+                color: #e0e0e0;
+            }
+            QProgressBar::chunk {
+                background-color: #0a84ff;
+                border-radius: 4px;
+            }
+        """)
+
 
     def update_ui_state(self):
         """Update UI elements based on current state"""
-        # This method can be simplified or removed if not needed
         if self.current_project:
+            self.tab_widget.setTabEnabled(1, True)
+            self.tab_widget.setTabEnabled(2, True)
+
             msg = f"Project: {os.path.basename(self.current_project)}"
             if self.current_images:
                 msg += f" | {len(self.current_images)} {'linked' if self.linked_images else 'loaded'} images"
-            self.status_bar.showMessage(msg)
+            self.status_label.setText(msg)
         else:
-            self.status_bar.showMessage("Ready to create or open a project")
+            self.tab_widget.setTabEnabled(1, False)
+            self.tab_widget.setTabEnabled(2, False)
+            if self.tab_widget.currentIndex() in [1, 2]:
+                self.tab_widget.setCurrentIndex(0)
+            self.status_label.setText("Ready to create or open a project")
+
+
 
     def setup_menu(self):
         menubar = self.menuBar()
@@ -93,48 +189,34 @@ class MainWindow(QMainWindow):
         exit_action = file_menu.addAction("Exit")
         exit_action.triggered.connect(self.close)
 
+
     def setup_connections(self):
         # Project tab signals
         self.project_tab.project_created.connect(self.handle_project_created)
         self.project_tab.project_opened.connect(self.handle_project_opened)
         self.project_tab.images_added.connect(self.handle_images_added)
         
-        # Connect Processing tab signals to their respective handlers:
-        # - processing_complete: Called when all images have been processed successfully
-        # - processing_cancelled: Called when user manually cancels processing
-        # - processing_started: Called when batch processing begins
-        # - processing_finished: Called when processing ends (success or failure)
+        # Processing tab signals
         self.processing_tab.processing_complete.connect(self.handle_processing_complete)
         self.processing_tab.processing_cancelled.connect(self.handle_processing_cancelled)
         self.processing_tab.processing_started.connect(self.handle_processing_started)
         self.processing_tab.processing_finished.connect(self.handle_processing_finished)
         
-        # Connect tab change event to monitor user navigation between tabs
-        # This allows enforcing requirements before allowing access to processing tab
+        # Tab change event
         self.tab_widget.currentChanged.connect(self.handle_tab_changed)
 
+
     def handle_tab_changed(self, index):
-        """
-        Handles tab switching events.
-        Can be used to:
-        - Validate project state before allowing processing tab access
-        - Save changes when leaving a tab
-        - Update UI elements based on selected tab
-        """
-        pass
+        """Force user back to Project tab if no project exists"""
+        if not self.current_project and index in [1, 2]:
+            QMessageBox.warning(self, "No Project", "Please create or open a project first.")
+            self.tab_widget.setCurrentIndex(0)
+
 
     def open_project(self):
-        """
-        Opens an existing project with validation:
-        1. Shows directory selection dialog
-        2. Validates if selected folder is a valid OMR project by checking for:
-           - image_references.txt file (for linked images)
-           - original_images folder (for copied images)
-        3. If valid, loads project into project tab
-        """
+        """Open an existing project with validation"""
         project_path = QFileDialog.getExistingDirectory(self, "Open Project")
         if project_path:
-            # Verify it's a valid project directory by checking for required files/folders
             if not os.path.exists(os.path.join(project_path, "image_references.txt")) and \
                not os.path.exists(os.path.join(project_path, "original_images")):
                 QMessageBox.warning(self, "Invalid Project", "Selected folder is not a valid OMR project")
@@ -142,14 +224,9 @@ class MainWindow(QMainWindow):
             
             self.project_tab.load_project(project_path)
 
+
     def handle_project_created(self, project_path):
-        """
-        Handles new project creation:
-        1. Updates current project path
-        2. Clears any existing loaded images
-        3. Updates processing tab with new project
-        4. Updates UI state and shows success message
-        """
+        """Handle new project creation"""
         self.current_project = project_path
         self.current_images = []
         self.linked_images = False
@@ -162,6 +239,7 @@ class MainWindow(QMainWindow):
             f"Project created successfully at:\n{project_path}"
         )
 
+
     def handle_project_opened(self, project_path):
         """Handle opening an existing project"""
         self.current_project = project_path
@@ -170,36 +248,33 @@ class MainWindow(QMainWindow):
         self.update_ui_state()
         self.status_bar.showMessage(f"Opened project: {os.path.basename(project_path)}")
 
-   # In MainWindow's handle_images_added method:
+
     def handle_images_added(self, image_paths):
         """Handle new images added to project"""
         self.current_images = image_paths
         self.linked_images = all(not path.startswith(self.current_project) for path in image_paths)
         
-        # Debug print to verify images
+        # Debug print
         print(f"MainWindow received {len(image_paths)} images:")
         for path in image_paths:
             print(f" - {path} (exists: {os.path.exists(path)})")
         
-        # Properly update processing tab
         self.processing_tab.load_project(self.current_project)
-        self.processing_tab.set_image_paths(image_paths.copy())  # Use copy to avoid reference issues
-        
-        self.review_tab.load_images(image_paths)  # Load images into ReviewTab
+        self.processing_tab.set_image_paths(image_paths.copy())
+        self.review_tab.load_images(image_paths)
         
         self.update_ui_state()
-        self.tab_widget.setTabEnabled(1, True)  # Ensure processing tab is enabled
 
-        
+
     def handle_processing_started(self):
-        """Disable UI elements during processing"""
-        self.tab_widget.setTabEnabled(0, False)  # Disable project tab
+        self.tab_widget.setTabEnabled(0, False)
         self.status_bar.showMessage("Processing started...")
 
+
     def handle_processing_finished(self):
-        """Re-enable UI elements after processing"""
-        self.tab_widget.setTabEnabled(0, True)  # Enable project tab
+        self.tab_widget.setTabEnabled(0, True)
         self.status_bar.showMessage("Processing finished")
+
 
     def handle_processing_complete(self, all_answers, processed_images, debug_imgs):
         """Handle completed batch processing"""
@@ -207,18 +282,11 @@ class MainWindow(QMainWindow):
             results_dir = os.path.join(self.current_project, "results")
             os.makedirs(results_dir, exist_ok=True)
             
-            # Save all answers to CSV
+            # Save CSV
             csv_path = os.path.join(results_dir, "answers.csv")
             with open(csv_path, 'w', newline='') as f:
                 writer = csv.writer(f)
-                
-                # Create CSV header row with "Image" column followed by question numbers (Q1, Q2, etc.)
-                # The number of columns matches the number of questions in all_answers[0]
                 writer.writerow(["Image"] + [f"Q{i+1}" for i in range(len(all_answers[0]))])
-                
-                # Write each image's answers to the CSV
-                # img_name: name of the processed image file
-                # answers: list of detected answers for each question
                 for i, answers in enumerate(all_answers):
                     img_name = os.path.basename(self.current_images[i])
                     writer.writerow([img_name] + answers)
@@ -229,7 +297,6 @@ class MainWindow(QMainWindow):
                 cv2.imwrite(os.path.join(results_dir, f"processed_{img_name}"), img)
             
             self.status_bar.showMessage(f"Processing complete! Results saved to {results_dir}")
-            
             QMessageBox.information(
                 self,
                 "Processing Complete",
@@ -237,27 +304,13 @@ class MainWindow(QMainWindow):
                 f"Results saved to:\n{results_dir}"
             )
 
+
     def handle_processing_cancelled(self):
         self.status_bar.showMessage("Processing cancelled by user")
 
-    def update_ui_state(self):
-        """Update UI elements based on current state"""
-        # Always enable both tabs
-        self.tab_widget.setTabEnabled(0, True)  # Project tab
-        self.tab_widget.setTabEnabled(1, True)  # Processing tab
-        
-        # Update status bar message (optional)
-        if self.current_project:
-            msg = f"Project: {os.path.basename(self.current_project)}"
-            if self.current_images:
-                msg += f" | {len(self.current_images)} {'linked' if self.linked_images else 'loaded'} images"
-            self.status_bar.showMessage(msg)
-        else:
-            self.status_bar.showMessage("Ready to create or open a project")
 
     def closeEvent(self, event):
-        """Handle window close event with proper cleanup"""
-        # Check for active processing
+        """Handle window close event with cleanup"""
         if hasattr(self.processing_tab, 'processing') and self.processing_tab.processing:
             reply = QMessageBox.question(
                 self,
@@ -269,11 +322,9 @@ class MainWindow(QMainWindow):
                 event.ignore()
                 return
         
-        # Clean up webcam resources if active
         if hasattr(self.project_tab, 'webcam_active') and self.project_tab.webcam_active:
             self.project_tab.stop_webcam()
         
-        # Clean up processing tab resources
         if hasattr(self.processing_tab, 'cap') and self.processing_tab.cap:
             self.processing_tab.cap.release()
         

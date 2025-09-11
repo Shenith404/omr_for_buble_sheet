@@ -24,6 +24,7 @@ class ReviewTab(QWidget):
         super().__init__()
         self.project_path = None
         self.image_paths = []
+        self.original_image_paths = []  # Store original images before processing
         self.current_index = 0
         self.answers = {}
         self.reviewed_images = set()
@@ -247,6 +248,33 @@ class ReviewTab(QWidget):
         self.update_navigation_buttons()
         self.update_review_button_state()
         self.project_loaded.emit(project_path)
+
+    def load_images(self, image_paths):
+        """
+        Prepare the review tab with original image paths.
+        This method is called when images are added to the project but before processing.
+        The review tab will show a message that processing is needed first.
+        """
+        # Store the original image paths for reference
+        self.original_image_paths = image_paths.copy() if image_paths else []
+        
+        # Clear current state since these are not processed images yet
+        self.image_paths = []
+        self.answers = {}
+        self.reviewed_images = set()
+        self.current_index = 0
+        
+        # Show message that processing is needed
+        if self.original_image_paths:
+            self.lbl_image_info.setText(f"{len(self.original_image_paths)} images added - Processing required")
+            self.image_label.setText("Please process the images first using the Processing tab")
+        else:
+            self.lbl_image_info.setText("No images loaded")
+            self.image_label.setText("No images available")
+        
+        # Disable navigation since there are no processed images yet
+        self.update_navigation_buttons()
+        self.update_review_button_state()
 
     def show_current_image(self):
         """Display the current processed image with results"""
