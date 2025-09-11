@@ -54,87 +54,308 @@ class ProcessingTab(QWidget):
 
     def setup_ui(self):
         """Initialize all UI components with optimized layouts"""
+        # Apply dark theme
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #181818;
+                color: #e8e8e8;
+                font-family: 'Segoe UI', 'SF Pro Display', 'Inter', 'Roboto', sans-serif;
+            }
+            QGroupBox {
+                background: #1e1e1e;
+                border: 1px solid #404040;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                color: #ffffff;
+                margin-top: 12px;
+                padding-top: 8px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 12px;
+                padding: 0 8px 0 8px;
+                color: #ffffff;
+                background: #1e1e1e;
+            }
+            QPushButton {
+                background: linear-gradient(180deg, #0078d4 0%, #005a9e 100%);
+                border: 1px solid #004578;
+                border-radius: 6px;
+                color: #ffffff;
+                font-size: 13px;
+                font-weight: 500;
+                padding: 10px 20px;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(180deg, #1084d8 0%, #0066b2 100%);
+                border-color: #0078d4;
+            }
+            QPushButton:pressed {
+                background: linear-gradient(180deg, #005a9e 0%, #004578 100%);
+            }
+            QPushButton:disabled {
+                background: #3a3a3a;
+                border-color: #525252;
+                color: #7a7a7a;
+            }
+            QLabel {
+                color: #e8e8e8;
+                font-weight: 400;
+            }
+            QProgressBar {
+                border: 1px solid #404040;
+                border-radius: 6px;
+                text-align: center;
+                font-size: 11px;
+                font-weight: 500;
+                background: #2a2a2a;
+                color: #e8e8e8;
+                height: 20px;
+            }
+            QProgressBar::chunk {
+                background: linear-gradient(90deg, #0078d4 0%, #00bcf2 100%);
+                border-radius: 5px;
+                margin: 1px;
+            }
+        """)
+
         self.layout = QVBoxLayout()
-        self.layout.setContentsMargins(10, 10, 10, 10)
+        self.layout.setContentsMargins(20, 20, 20, 20)
+        self.layout.setSpacing(20)
 
         # Project Selection Group
         project_group = QGroupBox("Project Selection")
         project_layout = QHBoxLayout()
+        project_layout.setSpacing(15)
+        
         self.btn_select_project = QPushButton("Select Project")
-        self.btn_select_project.setStyleSheet("font-weight: bold;")
+        self.btn_select_project.setStyleSheet("""
+            QPushButton {
+                background: linear-gradient(180deg, #28a745 0%, #1e7e34 100%);
+                border: 1px solid #1e7e34;
+                font-weight: 600;
+                min-width: 140px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(180deg, #34d058 0%, #28a745 100%);
+            }
+        """)
+        
         self.lbl_project = QLabel("No project selected")
+        self.lbl_project.setStyleSheet("""
+            QLabel {
+                background: #2a2a2a;
+                border: 1px solid #404040;
+                border-radius: 6px;
+                padding: 10px 12px;
+                color: #cccccc;
+                font-style: italic;
+            }
+        """)
+        
         project_layout.addWidget(self.btn_select_project)
-        project_layout.addWidget(self.lbl_project)
+        project_layout.addWidget(self.lbl_project, 1)
         project_group.setLayout(project_layout)
 
         # Image Navigation Group
         nav_group = QGroupBox("Image Navigation")
         nav_layout = QHBoxLayout()
+        nav_layout.setSpacing(15)
+        
         self.btn_prev = QPushButton("◀ Previous")
+        self.btn_prev.setStyleSheet("""
+            QPushButton {
+                background: linear-gradient(180deg, #6c757d 0%, #495057 100%);
+                border: 1px solid #495057;
+                min-width: 100px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(180deg, #868e96 0%, #6c757d 100%);
+            }
+        """)
+        
         self.btn_next = QPushButton("Next ▶")
-        self.btn_delete_image = QPushButton("Delete Image")  # Move delete button here
+        self.btn_next.setStyleSheet("""
+            QPushButton {
+                background: linear-gradient(180deg, #6c757d 0%, #495057 100%);
+                border: 1px solid #495057;
+                min-width: 100px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(180deg, #868e96 0%, #6c757d 100%);
+            }
+        """)
+        
+        self.btn_delete_image = QPushButton("Delete Image")
         self.btn_delete_image.setStyleSheet("""
-            background-color: #f44336; 
-            color: white;
-            font-weight: bold;
-        """)  # Add red background
+            QPushButton {
+                background: linear-gradient(180deg, #dc3545 0%, #c82333 100%);
+                border: 1px solid #c82333;
+                font-weight: 600;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(180deg, #e55a67 0%, #dc3545 100%);
+            }
+        """)
         self.btn_delete_image.clicked.connect(self.delete_current_image)
+        
         self.lbl_image_info = QLabel("0/0 images loaded")
+        self.lbl_image_info.setStyleSheet("""
+            QLabel {
+                background: #2a2a2a;
+                border: 1px solid #404040;
+                border-radius: 6px;
+                padding: 8px 12px;
+                color: #ffffff;
+                font-weight: 500;
+                min-width: 150px;
+            }
+        """)
+        self.lbl_image_info.setAlignment(Qt.AlignCenter)
+        
         nav_layout.addWidget(self.btn_prev)
         nav_layout.addWidget(self.lbl_image_info)
         nav_layout.addWidget(self.btn_next)
-        nav_layout.addWidget(self.btn_delete_image)  # Add delete button to navigation layout
+        nav_layout.addWidget(self.btn_delete_image)
         nav_group.setLayout(nav_layout)
 
         # Image Display with optimized settings
         self.image_label = QLabel()
         self.image_label.setAlignment(Qt.AlignCenter)
         self.image_label.setStyleSheet("""
-            border: 1px solid gray; 
-            min-height: 400px;
-            background-color: #f0f0f0;
+            QLabel {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #2a2a2a, stop:1 #1e1e1e);
+                border: 2px dashed #505050;
+                border-radius: 8px;
+                color: #888888;
+                font-size: 16px;
+                font-weight: 500;
+                min-height: 400px;
+            }
         """)
         self.image_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.image_label.setText("📄 No images loaded\n\nSelect a project to begin processing")
 
+        # Processing Controls with batch options
         # Processing Controls with batch options
         control_group = QGroupBox("Batch Processing")
         control_layout = QVBoxLayout()
+        control_layout.setSpacing(12)
+        
+        # Create a horizontal layout for action buttons
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(12)
+        
+        self.btn_save_model_answers = QPushButton("Save Answers")
+        self.btn_save_model_answers.setStyleSheet("""
+            QPushButton {
+                background: linear-gradient(180deg, #6f42c1 0%, #5a2d8c 100%);
+                border: 1px solid #5a2d8c;
+                font-weight: 600;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(180deg, #8b5cf6 0%, #6f42c1 100%);
+            }
+        """)
+        self.btn_save_model_answers.setEnabled(False)
+
+        self.btn_edit_answers = QPushButton("Edit Answers")
+        self.btn_edit_answers.setStyleSheet("""
+            QPushButton {
+                background: linear-gradient(180deg, #fd7e14 0%, #e55a00 100%);
+                border: 1px solid #e55a00;
+                font-weight: 600;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(180deg, #ff9500 0%, #fd7e14 100%);
+            }
+        """)
+        self.btn_edit_answers.setEnabled(False)
+        
         self.btn_process_all = QPushButton("Mark All Images")
         self.btn_process_all.setStyleSheet("""
-            background-color: #4CAF50; 
-            color: white;
-            padding: 8px;
-            font-weight: bold;
+            QPushButton {
+                background: linear-gradient(180deg, #28a745 0%, #1e7e34 100%);
+                border: 1px solid #1e7e34;
+                font-weight: 600;
+                min-width: 140px;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(180deg, #34d058 0%, #28a745 100%);
+            }
         """)
+        
         self.btn_cancel = QPushButton("Cancel Processing")
         self.btn_cancel.setStyleSheet("""
-            background-color: #f44336;
-            color: white;
-            padding: 8px;
+            QPushButton {
+                background: linear-gradient(180deg, #dc3545 0%, #c82333 100%);
+                border: 1px solid #c82333;
+                font-weight: 600;
+                min-width: 140px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(180deg, #e55a67 0%, #dc3545 100%);
+            }
         """)
         self.btn_cancel.setEnabled(False)
+        
+        # Add buttons to horizontal layout
+        button_layout.addWidget(self.btn_save_model_answers)
+        button_layout.addWidget(self.btn_edit_answers)
+        button_layout.addStretch()
+        button_layout.addWidget(self.btn_process_all)
+        button_layout.addWidget(self.btn_cancel)
         
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setTextVisible(True)
+        self.progress_bar.setValue(0)  # Set initial value
+        self.progress_bar.setStyleSheet("""
+            QProgressBar {
+                border: 2px solid #404040;
+                border-radius: 10px;
+                text-align: center;
+                font-size: 13px;
+                font-weight: 600;
+                background-color: #2a2a2a;
+                color: #ffffff;
+                height: 28px;
+                padding: 2px;
+            }
+            QProgressBar::chunk {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #28a745, stop:0.5 #20c997, stop:1 #17a2b8);
+                border-radius: 8px;
+                margin: 1px;
+                min-width: 10px;
+            }
+            QProgressBar[value="0"] {
+                color: #888888;
+            }
+        """)
         
         self.lbl_status = QLabel("Ready")
-        self.lbl_status.setStyleSheet("font-weight: bold;")
-        
-        # Add a button to load model answers
-        self.btn_save_model_answers = QPushButton("Save Answers")
-        self.btn_save_model_answers.setStyleSheet("font-weight: bold; " )
-        self.btn_save_model_answers.setEnabled(False)  # Initially disabled
+        self.lbl_status.setStyleSheet("""
+            QLabel {
+                background: #2a2a2a;
+                border: 1px solid #404040;
+                border-radius: 6px;
+                padding: 10px 12px;
+                color: #ffffff;
+                font-weight: 500;
+                font-size: 13px;
+            }
+        """)
+        self.lbl_status.setAlignment(Qt.AlignCenter)
 
-        # Add new button for editing answers
-        self.btn_edit_answers = QPushButton("Edit Answers")
-        self.btn_edit_answers.setStyleSheet("font-weight: bold;")
-        self.btn_edit_answers.setEnabled(False)  # Initially disabled
-
-        control_layout.addWidget(self.btn_save_model_answers)  # Add to the control group
-        control_layout.addWidget(self.btn_edit_answers)  # Add the new button
-        control_layout.addWidget(self.btn_process_all)
-        control_layout.addWidget(self.btn_cancel)
+        control_layout.addLayout(button_layout)
         control_layout.addWidget(self.progress_bar)
         control_layout.addWidget(self.lbl_status)
         control_group.setLayout(control_layout)
@@ -142,7 +363,7 @@ class ProcessingTab(QWidget):
         # Assemble main layout
         self.layout.addWidget(project_group)
         self.layout.addWidget(nav_group)
-        self.layout.addWidget(self.image_label)
+        self.layout.addWidget(self.image_label, 1)  # Give image label stretch
         self.layout.addWidget(control_group)
         self.setLayout(self.layout)
 
@@ -155,6 +376,15 @@ class ProcessingTab(QWidget):
         self.btn_cancel.clicked.connect(self.cancel_processing)
         self.btn_save_model_answers.clicked.connect(self.save_model_answers)
         self.btn_edit_answers.clicked.connect(self.edit_answers)  # Connect the new button
+
+    def test_progress_bar(self):
+        """Test method to verify progress bar styling"""
+        import time
+        for i in range(0, 101, 10):
+            self.progress_bar.setValue(i)
+            self.lbl_status.setText(f"Testing progress: {i}%")
+            QApplication.processEvents()
+            time.sleep(0.1)
 
     def select_project(self):
         """Let user select a project folder with validation"""

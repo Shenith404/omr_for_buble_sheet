@@ -35,34 +35,177 @@ class ReviewTab(QWidget):
         
     def setup_ui(self):
         """Initialize UI with 70-30 horizontal split layout"""
+        # Apply professional dark theme
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #181818;
+                color: #e8e8e8;
+                font-family: 'Segoe UI', 'SF Pro Display', 'Inter', 'Roboto', sans-serif;
+            }
+            QGroupBox {
+                background: #1e1e1e;
+                border: 1px solid #404040;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                color: #ffffff;
+                margin-top: 12px;
+                padding-top: 8px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 12px;
+                padding: 0 8px 0 8px;
+                color: #ffffff;
+                background: #1e1e1e;
+            }
+            QPushButton {
+                background: linear-gradient(180deg, #0078d4 0%, #005a9e 100%);
+                border: 1px solid #004578;
+                border-radius: 6px;
+                color: #ffffff;
+                font-size: 13px;
+                font-weight: 500;
+                padding: 10px 20px;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(180deg, #1084d8 0%, #0066b2 100%);
+                border-color: #0078d4;
+            }
+            QPushButton:pressed {
+                background: linear-gradient(180deg, #005a9e 0%, #004578 100%);
+            }
+            QPushButton:disabled {
+                background: #3a3a3a;
+                border-color: #525252;
+                color: #7a7a7a;
+            }
+            QLabel {
+                color: #e8e8e8;
+                font-weight: 400;
+            }
+            QComboBox {
+                background: #2a2a2a;
+                border: 1px solid #404040;
+                border-radius: 6px;
+                color: #e8e8e8;
+                font-size: 13px;
+                padding: 8px 12px;
+                selection-background-color: #0078d4;
+            }
+            QComboBox:focus {
+                border-color: #0078d4;
+                background: #323232;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 20px;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 4px solid #e8e8e8;
+                margin-right: 8px;
+            }
+            QComboBox QAbstractItemView {
+                background: #2a2a2a;
+                border: 1px solid #404040;
+                border-radius: 6px;
+                color: #e8e8e8;
+                selection-background-color: #0078d4;
+                outline: none;
+            }
+        """)
+
         main_layout = QHBoxLayout(self)
-        main_layout.setContentsMargins(5, 5, 5, 5)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setSpacing(20)
         
         # Left Panel (70%)
         left_panel = QWidget()
         left_layout = QVBoxLayout(left_panel)
-        left_layout.setContentsMargins(5, 5, 5, 5)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(15)
         
         # Project Selection Group
         project_group = QGroupBox("Project Selection")
         project_layout = QHBoxLayout()
+        project_layout.setSpacing(15)
         
         self.btn_select_project = QPushButton("Open Project")
-        self.btn_select_project.setStyleSheet("font-weight: bold;")
+        self.btn_select_project.setStyleSheet("""
+            QPushButton {
+                background: linear-gradient(180deg, #28a745 0%, #1e7e34 100%);
+                border: 1px solid #1e7e34;
+                font-weight: 600;
+                min-width: 140px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(180deg, #34d058 0%, #28a745 100%);
+            }
+        """)
+        
         self.lbl_project = QLabel("No project loaded")
-        self.lbl_project.setStyleSheet("font-weight: bold;")
+        self.lbl_project.setStyleSheet("""
+            QLabel {
+                background: #2a2a2a;
+                border: 1px solid #404040;
+                border-radius: 6px;
+                padding: 10px 12px;
+                color: #cccccc;
+                font-style: italic;
+                font-weight: 500;
+            }
+        """)
         
         project_layout.addWidget(self.btn_select_project)
-        project_layout.addWidget(self.lbl_project)
+        project_layout.addWidget(self.lbl_project, 1)
         project_group.setLayout(project_layout)
         
         # Image Navigation Group
         nav_group = QGroupBox("Image Navigation")
         nav_layout = QHBoxLayout()
+        nav_layout.setSpacing(15)
         
         self.btn_prev = QPushButton("◀ Previous")
+        self.btn_prev.setStyleSheet("""
+            QPushButton {
+                background: linear-gradient(180deg, #6c757d 0%, #495057 100%);
+                border: 1px solid #495057;
+                min-width: 100px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(180deg, #868e96 0%, #6c757d 100%);
+            }
+        """)
+        
         self.btn_next = QPushButton("Next ▶")
+        self.btn_next.setStyleSheet("""
+            QPushButton {
+                background: linear-gradient(180deg, #6c757d 0%, #495057 100%);
+                border: 1px solid #495057;
+                min-width: 100px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(180deg, #868e96 0%, #6c757d 100%);
+            }
+        """)
+        
         self.lbl_image_info = QLabel("0/0 images loaded")
+        self.lbl_image_info.setStyleSheet("""
+            QLabel {
+                background: #2a2a2a;
+                border: 1px solid #404040;
+                border-radius: 6px;
+                padding: 8px 12px;
+                color: #ffffff;
+                font-weight: 500;
+                min-width: 150px;
+            }
+        """)
+        self.lbl_image_info.setAlignment(Qt.AlignCenter)
         
         nav_layout.addWidget(self.btn_prev)
         nav_layout.addWidget(self.lbl_image_info)
@@ -73,11 +216,19 @@ class ReviewTab(QWidget):
         self.image_label = QLabel()
         self.image_label.setAlignment(Qt.AlignCenter)
         self.image_label.setStyleSheet("""
-            border: 1px solid gray; 
-            min-height: 400px;
-            background-color: #f0f0f0;
+            QLabel {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #2a2a2a, stop:1 #1e1e1e);
+                border: 2px dashed #505050;
+                border-radius: 8px;
+                color: #888888;
+                font-size: 16px;
+                font-weight: 500;
+                min-height: 400px;
+            }
         """)
         self.image_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.image_label.setText("📊 No results to review\n\nOpen a project to begin")
         
         # Results Info Group
         info_group = QGroupBox("Results Information")
@@ -85,8 +236,18 @@ class ReviewTab(QWidget):
         
         self.lbl_results_info = QLabel("No results available")
         self.lbl_results_info.setWordWrap(True)
+        self.lbl_results_info.setStyleSheet("""
+            QLabel {
+                background: #2a2a2a;
+                border: 1px solid #404040;
+                border-radius: 6px;
+                padding: 12px;
+                color: #e8e8e8;
+                font-size: 13px;
+                line-height: 1.4;
+            }
+        """)
         info_layout.addWidget(self.lbl_results_info)
-        
         info_group.setLayout(info_layout)
         
         # Assemble left panel (70%)
@@ -98,29 +259,34 @@ class ReviewTab(QWidget):
         # Right Panel (30%) - Now with all requested controls
         right_panel = QWidget()
         right_panel.setStyleSheet("""
-            border-left: 1px solid #ddd;
+            QWidget {
+                border-left: 2px solid #404040;
+                padding-left: 15px;
+            }
         """)
         right_layout = QVBoxLayout(right_panel)
-        right_layout.setContentsMargins(10, 10, 10, 10)
-        right_layout.setSpacing(15)
+        right_layout.setContentsMargins(15, 0, 0, 0)
+        right_layout.setSpacing(20)
         
         # Download Results Button (added at top of right panel)
-        self.btn_download_results = QPushButton("Download Results")
+        self.btn_download_results = QPushButton("📥 Download Results")
         self.btn_download_results.setStyleSheet("""
             QPushButton {
-                font-weight: bold;
-                padding: 10px;
-                background-color: #2E7D32;
-                color: white;
-                border-radius: 5px;
+                background: linear-gradient(180deg, #28a745 0%, #1e7e34 100%);
+                border: 1px solid #1e7e34;
+                font-weight: 600;
+                padding: 12px 16px;
+                border-radius: 8px;
                 font-size: 14px;
+                min-height: 20px;
             }
             QPushButton:hover {
-                background-color: #1B5E20;
+                background: linear-gradient(180deg, #34d058 0%, #28a745 100%);
             }
             QPushButton:disabled {
-                background-color: #a5d6a7;
-                color: #e8f5e9;
+                background: #3a3a3a;
+                border-color: #525252;
+                color: #7a7a7a;
             }
         """)
         right_layout.addWidget(self.btn_download_results)
@@ -128,61 +294,104 @@ class ReviewTab(QWidget):
         # Question Selection Group
         question_group = QGroupBox("Change Detected Answers")
         question_layout = QVBoxLayout(question_group)
-        question_layout.setSpacing(10)
+        question_layout.setSpacing(15)
         
-        # First dropdown (1-50)
+        # Question Number Section
+        question_label = QLabel("Question Number:")
+        question_label.setStyleSheet("QLabel { color: #e8e8e8; font-weight: 500; margin-bottom: 5px; }")
+        
         self.question_combo = QComboBox()
         self.question_combo.addItems([str(i) for i in range(1, 51)])
-        question_layout.addWidget(QLabel("Question Number:"))
-        question_layout.addWidget(self.question_combo)
-        
-        # Second dropdown (1-4)
-        self.answer_combo = QComboBox()
-        self.answer_combo.addItems([str(i) for i in range(1, 5)])
-        question_layout.addWidget(QLabel("Correct Answer:"))
-        question_layout.addWidget(self.answer_combo)
-        
-        # Change Answer button
-        self.btn_change_answer = QPushButton("Update Answer")
-        self.btn_change_answer.setStyleSheet("""
-            QPushButton {
-                font-weight: bold;
-                padding: 8px;
-                background-color: #2196F3;
-                color: white;
-                border-radius: 4px;
+        self.question_combo.setStyleSheet("""
+            QComboBox {
+                background: #2a2a2a;
+                border: 1px solid #404040;
+                border-radius: 6px;
+                color: #e8e8e8;
+                font-size: 13px;
+                padding: 10px 12px;
+                min-height: 20px;
+                font-weight: 500;
             }
-            QPushButton:hover {
-                background-color: #0b7dda;
-            }
-            QPushButton:disabled {
-                background-color: #cccccc;
-                color: #666666;
+            QComboBox:focus {
+                border-color: #0078d4;
+                background: #323232;
             }
         """)
-        question_layout.addWidget(self.btn_change_answer)
         
-        # Add spacer
-        right_layout.addWidget(question_group)
-        right_layout.addStretch(1)
+        # Answer Section
+        answer_label = QLabel("Correct Answer:")
+        answer_label.setStyleSheet("QLabel { color: #e8e8e8; font-weight: 500; margin-bottom: 5px; }")
         
-        # Mark as Reviewed button at bottom
-        self.btn_mark_reviewed = QPushButton("✓ Mark as Reviewed")
-        self.btn_mark_reviewed.setStyleSheet("""
+        self.answer_combo = QComboBox()
+        self.answer_combo.addItems([str(i) for i in range(1, 5)])
+        self.answer_combo.setStyleSheet("""
+            QComboBox {
+                background: #2a2a2a;
+                border: 1px solid #404040;
+                border-radius: 6px;
+                color: #e8e8e8;
+                font-size: 13px;
+                padding: 10px 12px;
+                min-height: 20px;
+                font-weight: 500;
+            }
+            QComboBox:focus {
+                border-color: #0078d4;
+                background: #323232;
+            }
+        """)
+        
+        # Change Answer button
+        self.btn_change_answer = QPushButton("🔄 Update Answer")
+        self.btn_change_answer.setStyleSheet("""
             QPushButton {
-                font-weight: bold;
-                padding: 10px;
-                background-color: #4CAF50;
-                color: white;
-                border-radius: 5px;
-                font-size: 14px;
+                background: linear-gradient(180deg, #007bff 0%, #0056b3 100%);
+                border: 1px solid #0056b3;
+                font-weight: 600;
+                padding: 10px 16px;
+                border-radius: 6px;
+                min-height: 20px;
             }
             QPushButton:hover {
-                background-color: #45a049;
+                background: linear-gradient(180deg, #1a8cff 0%, #007bff 100%);
             }
             QPushButton:disabled {
-                background-color: #a5d6a7;
-                color: #e8f5e9;
+                background: #3a3a3a;
+                border-color: #525252;
+                color: #7a7a7a;
+            }
+        """)
+        
+        question_layout.addWidget(question_label)
+        question_layout.addWidget(self.question_combo)
+        question_layout.addWidget(answer_label)
+        question_layout.addWidget(self.answer_combo)
+        question_layout.addWidget(self.btn_change_answer)
+        
+        # Add question group to right layout
+        right_layout.addWidget(question_group)
+        right_layout.addStretch(1)  # Add flexible space
+        
+        # Mark as Reviewed button at bottom
+        self.btn_mark_reviewed = QPushButton("✅ Mark as Reviewed")
+        self.btn_mark_reviewed.setStyleSheet("""
+            QPushButton {
+                background: linear-gradient(180deg, #6f42c1 0%, #5a2d8c 100%);
+                border: 1px solid #5a2d8c;
+                font-weight: 600;
+                padding: 12px 16px;
+                border-radius: 8px;
+                font-size: 14px;
+                min-height: 20px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(180deg, #8b5cf6 0%, #6f42c1 100%);
+            }
+            QPushButton:disabled {
+                background: #3a3a3a;
+                border-color: #525252;
+                color: #7a7a7a;
             }
         """)
         right_layout.addWidget(self.btn_mark_reviewed)

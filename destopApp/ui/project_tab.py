@@ -29,10 +29,31 @@ class ProjectTab(QWidget):
     def setup_ui(self):
         """Initialize all UI components"""
         try:
+            # Apply dark theme to the entire widget
+            self.setStyleSheet("""
+                QWidget {
+                    background-color: #181818;
+                    color: #e8e8e8;
+                    font-family: 'Segoe UI', 'SF Pro Display', 'Inter', 'Roboto', sans-serif;
+                }
+                QMessageBox {
+                    background-color: #2a2a2a;
+                    color: #e8e8e8;
+                }
+                QMessageBox QPushButton {
+                    background: linear-gradient(180deg, #0078d4 0%, #005a9e 100%);
+                    border: 1px solid #004578;
+                    border-radius: 6px;
+                    color: #ffffff;
+                    padding: 8px 16px;
+                    min-width: 80px;
+                }
+            """)
+
             # Main layout
             main_layout = QVBoxLayout()
-            main_layout.setContentsMargins(15, 15, 15, 15)
-            main_layout.setSpacing(15)
+            main_layout.setContentsMargins(20, 20, 20, 20)
+            main_layout.setSpacing(20)
 
             # Setup components
             self.setup_project_management_ui()
@@ -45,7 +66,7 @@ class ProjectTab(QWidget):
             main_layout.addWidget(self.preview_group, stretch=1)
 
             self.setLayout(main_layout)
-            self.setMinimumSize(800, 700)
+            self.setMinimumSize(900, 750)
 
         except Exception as e:
             self.show_error("UI Setup Failed", f"Failed to initialize UI: {str(e)}")
@@ -54,7 +75,25 @@ class ProjectTab(QWidget):
         """Setup project creation/opening controls"""
         try:
             self.project_group = QGroupBox("Project Management")
-            self.project_group.setFont(QFont("Arial", 10, QFont.Bold))
+            self.project_group.setStyleSheet("""
+                QGroupBox {
+                    background: #1e1e1e;
+                    border: 1px solid #404040;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #ffffff;
+                    margin-top: 12px;
+                    padding-top: 8px;
+                }
+                QGroupBox::title {
+                    subcontrol-origin: margin;
+                    left: 12px;
+                    padding: 0 8px 0 8px;
+                    color: #ffffff;
+                    background: #1e1e1e;
+                }
+            """)
             layout = QGridLayout()
             layout.setSpacing(15)
 
@@ -62,27 +101,81 @@ class ProjectTab(QWidget):
             self.project_name_input = QLineEdit()
             self.project_name_input.setPlaceholderText("Enter project name")
             self.project_name_input.setMinimumWidth(250)
+            self.project_name_input.setStyleSheet("""
+                QLineEdit {
+                    background: #2a2a2a;
+                    border: 1px solid #404040;
+                    border-radius: 6px;
+                    color: #e8e8e8;
+                    font-size: 13px;
+                    padding: 10px 12px;
+                    selection-background-color: #0078d4;
+                }
+                QLineEdit:focus {
+                    border-color: #0078d4;
+                    background: #323232;
+                }
+                QLineEdit::placeholder {
+                    color: #888888;
+                }
+            """)
 
             # Location
             self.location_label = QLabel("No location selected")
             self.location_label.setWordWrap(True)
+            self.location_label.setStyleSheet("""
+                QLabel {
+                    background: #2a2a2a;
+                    border: 1px solid #404040;
+                    border-radius: 6px;
+                    color: #cccccc;
+                    padding: 10px 12px;
+                    font-style: italic;
+                }
+            """)
+            
             self.btn_browse = QPushButton("Browse...")
             self.btn_browse.clicked.connect(self.select_location)
-            self.btn_browse.setStyleSheet("padding: 5px;")
+            self.btn_browse.setStyleSheet("""
+                QPushButton {
+                    background: linear-gradient(180deg, #505050 0%, #404040 100%);
+                    border: 1px solid #606060;
+                    border-radius: 6px;
+                    color: #ffffff;
+                    font-size: 13px;
+                    font-weight: 500;
+                    padding: 10px 16px;
+                    min-width: 80px;
+                }
+                QPushButton:hover {
+                    background: linear-gradient(180deg, #606060 0%, #505050 100%);
+                    border-color: #707070;
+                }
+                QPushButton:pressed {
+                    background: linear-gradient(180deg, #404040 0%, #303030 100%);
+                }
+            """)
 
             # Buttons
             self.btn_create = self.create_styled_button(
-                "Create Project", "#4CAF50", "document-new")
+                "Create Project", "#28a745", "document-new")
             self.btn_create.clicked.connect(self.create_project)
 
             self.btn_open = self.create_styled_button(
-                "Open Project", "#2196F3", "document-open")
+                "Open Project", "#007bff", "document-open")
             self.btn_open.clicked.connect(self.open_project_dialog)
 
+            # Labels with proper styling
+            name_label = QLabel("Project Name:")
+            name_label.setStyleSheet("QLabel { color: #e8e8e8; font-weight: 500; }")
+            
+            location_label_header = QLabel("Project Location:")
+            location_label_header.setStyleSheet("QLabel { color: #e8e8e8; font-weight: 500; }")
+
             # Add to layout
-            layout.addWidget(QLabel("Project Name:"), 0, 0)
+            layout.addWidget(name_label, 0, 0)
             layout.addWidget(self.project_name_input, 0, 1, 1, 2)
-            layout.addWidget(QLabel("Project Location:"), 1, 0)
+            layout.addWidget(location_label_header, 1, 0)
             layout.addWidget(self.location_label, 1, 1)
             layout.addWidget(self.btn_browse, 1, 2)
             layout.addWidget(self.btn_create, 2, 0, 1, 3)
@@ -97,34 +190,87 @@ class ProjectTab(QWidget):
         """Setup image source selection controls"""
         try:
             self.source_group = QGroupBox("Image Source")
-            self.source_group.setFont(QFont("Arial", 10, QFont.Bold))
+            self.source_group.setStyleSheet("""
+                QGroupBox {
+                    background: #1e1e1e;
+                    border: 1px solid #404040;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #ffffff;
+                    margin-top: 12px;
+                    padding-top: 8px;
+                }
+                QGroupBox::title {
+                    subcontrol-origin: margin;
+                    left: 12px;
+                    padding: 0 8px 0 8px;
+                    color: #ffffff;
+                    background: #1e1e1e;
+                }
+            """)
             layout = QHBoxLayout()
-            layout.setSpacing(10)
+            layout.setSpacing(15)
 
             # Source selection
             self.source_combo = QComboBox()
             self.source_combo.addItems(["File", "Webcam"])
             self.source_combo.currentIndexChanged.connect(self.toggle_source)
             self.source_combo.setMinimumWidth(150)
+            self.source_combo.setStyleSheet("""
+                QComboBox {
+                    background: #2a2a2a;
+                    border: 1px solid #404040;
+                    border-radius: 6px;
+                    color: #e8e8e8;
+                    font-size: 13px;
+                    padding: 8px 12px;
+                    min-width: 120px;
+                    font-weight: 500;
+                }
+                QComboBox:focus {
+                    border-color: #0078d4;
+                    background: #323232;
+                }
+                QComboBox::drop-down {
+                    border: none;
+                    width: 20px;
+                }
+                QComboBox::down-arrow {
+                    image: none;
+                    border-left: 4px solid transparent;
+                    border-right: 4px solid transparent;
+                    border-top: 4px solid #e8e8e8;
+                    margin-right: 8px;
+                }
+                QComboBox QAbstractItemView {
+                    background: #2a2a2a;
+                    border: 1px solid #404040;
+                    border-radius: 6px;
+                    color: #e8e8e8;
+                    selection-background-color: #0078d4;
+                    outline: none;
+                }
+            """)
 
             # Action buttons
             self.btn_add = self.create_styled_button(
-                "Add Images", "#2196F3", "list-add")
+                "Add Images", "#007bff", "list-add")
             self.btn_add.clicked.connect(self.add_images)
             self.btn_add.setEnabled(False)
 
             self.btn_link = self.create_styled_button(
-                "Link Images", "#9C27B0", "emblem-symbolic-link")
+                "Link Images", "#6f42c1", "emblem-symbolic-link")
             self.btn_link.clicked.connect(self.link_images)
             self.btn_link.setEnabled(False)
 
             self.btn_capture = self.create_styled_button(
-                "Capture", "#FF9800", "camera-photo")
+                "Capture", "#fd7e14", "camera-photo")
             self.btn_capture.clicked.connect(self.capture_webcam_image)
             self.btn_capture.hide()
 
             self.btn_save = self.create_styled_button(
-                "Save Image", "#4CAF50", "document-save")
+                "Save Image", "#28a745", "document-save")
             self.btn_save.clicked.connect(self.save_captured_image)
             self.btn_save.hide()
 
@@ -134,6 +280,7 @@ class ProjectTab(QWidget):
             layout.addWidget(self.btn_link)
             layout.addWidget(self.btn_capture)
             layout.addWidget(self.btn_save)
+            layout.addStretch()  # Add stretch to push buttons to the left
 
             self.source_group.setLayout(layout)
             self.source_group.setEnabled(False)
@@ -145,9 +292,27 @@ class ProjectTab(QWidget):
         """Setup image preview area"""
         try:
             self.preview_group = QGroupBox("Image Preview")
-            self.preview_group.setFont(QFont("Arial", 10, QFont.Bold))
+            self.preview_group.setStyleSheet("""
+                QGroupBox {
+                    background: #1e1e1e;
+                    border: 1px solid #404040;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #ffffff;
+                    margin-top: 12px;
+                    padding-top: 8px;
+                }
+                QGroupBox::title {
+                    subcontrol-origin: margin;
+                    left: 12px;
+                    padding: 0 8px 0 8px;
+                    color: #ffffff;
+                    background: #1e1e1e;
+                }
+            """)
             layout = QVBoxLayout()
-            layout.setSpacing(10)
+            layout.setSpacing(15)
 
             # Preview label
             self.preview_label = QLabel()
@@ -156,17 +321,38 @@ class ProjectTab(QWidget):
             self.preview_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             self.preview_label.setStyleSheet("""
                 QLabel {
-                    background-color: #f0f0f0;
-                    border: 2px solid #ccc;
-                    border-radius: 5px;
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #2a2a2a, stop:1 #1e1e1e);
+                    border: 2px dashed #505050;
+                    border-radius: 8px;
+                    color: #888888;
+                    font-size: 14px;
+                    font-weight: 500;
+                    padding: 20px;
+                }
+                QLabel:hover {
+                    border-color: #0078d4;
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #323232, stop:1 #262626);
                 }
             """)
-            self.preview_label.setText("No image to display")
+            self.preview_label.setText("📷 No image to display\n\nDrag & drop images here or use the controls above")
 
             # Status label
             self.status_label = QLabel("No project loaded")
             self.status_label.setAlignment(Qt.AlignCenter)
-            self.status_label.setStyleSheet("font-style: italic; color: #666;")
+            self.status_label.setStyleSheet("""
+                QLabel {
+                    background: #262626;
+                    border: 1px solid #404040;
+                    border-radius: 6px;
+                    color: #cccccc;
+                    font-style: italic;
+                    font-size: 12px;
+                    padding: 8px 12px;
+                    font-weight: 400;
+                }
+            """)
 
             # Add to layout
             layout.addWidget(self.preview_label, stretch=1)
@@ -178,24 +364,45 @@ class ProjectTab(QWidget):
             self.show_error("Setup Error", f"Failed to setup preview UI: {str(e)}")
 
     def create_styled_button(self, text, color, icon_name):
-        """Helper to create consistently styled buttons"""
+        """Helper to create consistently styled buttons with modern dark theme"""
         btn = QPushButton(text)
-        btn.setIcon(QIcon.fromTheme(icon_name))
+        # Note: Icons might not display in dark theme, focusing on color-coded buttons
+        
+        # Convert hex colors to modern gradient styles
+        color_map = {
+            "#28a745": ("linear-gradient(180deg, #28a745 0%, #1e7e34 100%)", "#1e7e34"),  # Success Green
+            "#007bff": ("linear-gradient(180deg, #007bff 0%, #0056b3 100%)", "#0056b3"),  # Primary Blue  
+            "#6f42c1": ("linear-gradient(180deg, #6f42c1 0%, #5a2d8c 100%)", "#5a2d8c"),  # Purple
+            "#fd7e14": ("linear-gradient(180deg, #fd7e14 0%, #e55a00 100%)", "#e55a00"),  # Orange
+            "#dc3545": ("linear-gradient(180deg, #dc3545 0%, #c82333 100%)", "#c82333"),  # Danger Red
+        }
+        
+        gradient, pressed_color = color_map.get(color, (f"linear-gradient(180deg, {color} 0%, {self.darken_color(color)} 100%)", self.darken_color(color)))
+        
         btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: {color};
-                color: white;
-                border: none;
-                padding: 8px;
-                border-radius: 4px;
-                min-width: 100px;
+                background: {gradient};
+                border: 1px solid {self.darken_color(color)};
+                border-radius: 6px;
+                color: #ffffff;
+                font-size: 13px;
+                font-weight: 500;
+                padding: 10px 20px;
+                min-width: 120px;
+                min-height: 16px;
             }}
             QPushButton:hover {{
-                background-color: {self.darken_color(color)};
+                background: {self.lighten_color(gradient)};
+                border-color: {color};
+            }}
+            QPushButton:pressed {{
+                background: linear-gradient(180deg, {pressed_color} 0%, {self.darken_color(pressed_color)} 100%);
+                border-color: {self.darken_color(pressed_color)};
             }}
             QPushButton:disabled {{
-                background-color: #cccccc;
-                color: #666666;
+                background: linear-gradient(180deg, #3a3a3a 0%, #2a2a2a 100%);
+                border-color: #525252;
+                color: #7a7a7a;
             }}
         """)
         return btn
@@ -207,6 +414,18 @@ class ProjectTab(QWidget):
             return color.darker(100 + int(100 * (1 - factor))).name()
         except:
             return hex_color
+
+    def lighten_color(self, gradient_or_color, factor=1.2):
+        """Lighten a color or modify a gradient for hover effects"""
+        if "linear-gradient" in str(gradient_or_color):
+            # For gradients, extract colors and lighten them
+            return str(gradient_or_color).replace("28a745", "34d058").replace("007bff", "1a8cff").replace("6f42c1", "8b5cf6").replace("fd7e14", "ff9500").replace("dc3545", "ff4757")
+        else:
+            try:
+                color = QColor(gradient_or_color)
+                return color.lighter(int(100 * factor)).name()
+            except:
+                return gradient_or_color
 
     def validate_image(self, image):
         """Validate the captured image before saving"""
