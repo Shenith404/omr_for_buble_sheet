@@ -3,11 +3,11 @@ import json
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox,
     QPushButton, QLabel, QSizePolicy, QFileDialog,
-    QComboBox, QSpacerItem, QMessageBox
+    QComboBox, QSpacerItem, QMessageBox, QSpinBox
 )
 from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt, Signal
-import db  # Assuming db is a module for handling JSON data
+import db  
 import utils
 import cv2
 import shutil
@@ -300,24 +300,132 @@ class ReviewTab(QWidget):
         question_label = QLabel("Question Number:")
         question_label.setStyleSheet("QLabel { color: #e8e8e8; font-weight: 500; margin-bottom: 5px; }")
         
-        self.question_combo = QComboBox()
-        self.question_combo.addItems([str(i) for i in range(1, 51)])
-        self.question_combo.setStyleSheet("""
-            QComboBox {
+        # Create a horizontal layout for question number input
+        question_input_layout = QHBoxLayout()
+        question_input_layout.setSpacing(8)
+        
+        self.question_spinbox = QSpinBox()
+        self.question_spinbox.setRange(1, 50)
+        self.question_spinbox.setValue(1)
+        self.question_spinbox.setSuffix(" / 50")
+        self.question_spinbox.setMinimumWidth(120)
+        self.question_spinbox.setStyleSheet("""
+            QSpinBox {
                 background: #2a2a2a;
                 border: 1px solid #404040;
                 border-radius: 6px;
                 color: #e8e8e8;
-                font-size: 13px;
+                font-size: 14px;
+                font-weight: 600;
                 padding: 10px 12px;
                 min-height: 20px;
-                font-weight: 500;
             }
-            QComboBox:focus {
+            QSpinBox:focus {
                 border-color: #0078d4;
                 background: #323232;
             }
+            QSpinBox::up-button {
+                background: #404040;
+                border: none;
+                border-left: 1px solid #505050;
+                border-top-right-radius: 6px;
+                width: 20px;
+                color: #e8e8e8;
+            }
+            QSpinBox::up-button:hover {
+                background: #0078d4;
+            }
+            QSpinBox::up-arrow {
+                image: none;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-bottom: 4px solid #e8e8e8;
+                width: 8px;
+                height: 8px;
+            }
+            QSpinBox::down-button {
+                background: #404040;
+                border: none;
+                border-left: 1px solid #505050;
+                border-bottom-right-radius: 6px;
+                width: 20px;
+                color: #e8e8e8;
+            }
+            QSpinBox::down-button:hover {
+                background: #0078d4;
+            }
+            QSpinBox::down-arrow {
+                image: none;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 4px solid #e8e8e8;
+                width: 8px;
+                height: 8px;
+            }
         """)
+        
+        # Quick jump buttons for common question ranges
+        btn_q1_10 = QPushButton("1-10")
+        btn_q11_20 = QPushButton("11-20")
+        btn_q21_30 = QPushButton("21-30")
+        btn_q31_40 = QPushButton("31-40")
+        btn_q41_50 = QPushButton("41-50")
+        
+        quick_jump_style = """
+            QPushButton {
+                background: #404040;
+                border: 1px solid #505050;
+                border-radius: 4px;
+                color: #e8e8e8;
+                font-size: 11px;
+                font-weight: 500;
+                padding: 6px 8px;
+                min-width: 35px;
+                max-width: 45px;
+            }
+            QPushButton:hover {
+                background: #0078d4;
+                border-color: #1084d8;
+            }
+            QPushButton:pressed {
+                background: #005a9e;
+            }
+        """
+        
+        for btn in [btn_q1_10, btn_q11_20, btn_q21_30, btn_q31_40, btn_q41_50]:
+            btn.setStyleSheet(quick_jump_style)
+        
+        # Connect quick jump buttons
+        btn_q1_10.clicked.connect(lambda: self.question_spinbox.setValue(1))
+        btn_q11_20.clicked.connect(lambda: self.question_spinbox.setValue(11))
+        btn_q21_30.clicked.connect(lambda: self.question_spinbox.setValue(21))
+        btn_q31_40.clicked.connect(lambda: self.question_spinbox.setValue(31))
+        btn_q41_50.clicked.connect(lambda: self.question_spinbox.setValue(41))
+        
+        question_input_layout.addWidget(self.question_spinbox)
+        question_input_layout.addStretch()
+        
+        # Quick jump buttons layout
+        quick_jump_layout = QHBoxLayout()
+        quick_jump_layout.setSpacing(4)
+        
+        quick_jump_label = QLabel("Quick jump:")
+        quick_jump_label.setStyleSheet("""
+            QLabel { 
+                color: #a0a0a0; 
+                font-size: 11px; 
+                font-weight: 500; 
+                margin-right: 4px;
+            }
+        """)
+        
+        quick_jump_layout.addWidget(quick_jump_label)
+        quick_jump_layout.addWidget(btn_q1_10)
+        quick_jump_layout.addWidget(btn_q11_20)
+        quick_jump_layout.addWidget(btn_q21_30)
+        quick_jump_layout.addWidget(btn_q31_40)
+        quick_jump_layout.addWidget(btn_q41_50)
+        quick_jump_layout.addStretch()
         
         # Answer Section
         answer_label = QLabel("Correct Answer:")
@@ -364,7 +472,8 @@ class ReviewTab(QWidget):
         """)
         
         question_layout.addWidget(question_label)
-        question_layout.addWidget(self.question_combo)
+        question_layout.addLayout(question_input_layout)
+        question_layout.addLayout(quick_jump_layout)
         question_layout.addWidget(answer_label)
         question_layout.addWidget(self.answer_combo)
         question_layout.addWidget(self.btn_change_answer)
@@ -587,7 +696,7 @@ class ReviewTab(QWidget):
         self.btn_change_answer.setEnabled(False)  # Disable button during processing
 
         current_image = os.path.basename(self.image_paths[self.current_index])
-        question_num = int(self.question_combo.currentText())
+        question_num = self.question_spinbox.value()  # Get value from spinbox
         new_answer = int(self.answer_combo.currentText())
         
         # Update the answer in the db
