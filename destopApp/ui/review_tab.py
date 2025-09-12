@@ -32,6 +32,7 @@ class ReviewTab(QWidget):
         self.setup_connections()
         self.handler = None
         self.model_answers = []
+    
         
     def setup_ui(self):
         """Initialize UI with 70-30 horizontal split layout"""
@@ -497,6 +498,7 @@ class ReviewTab(QWidget):
         
         self.update_navigation_buttons()
         self.update_review_button_state()
+        
 
     def setup_connections(self):
         """Connect all signals and slots"""

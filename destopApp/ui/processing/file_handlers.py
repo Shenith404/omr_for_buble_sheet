@@ -73,6 +73,23 @@ class FileOperationHandler:
                     
         except Exception as e:
             raise Exception(f"Error saving {filename}: {str(e)}")
+        
+    @staticmethod
+    def clear_results_folder(project_path):
+        """Clear all files in the results folder"""
+        if not project_path:
+            return
+        
+        results_dir = os.path.join(project_path, "results")
+        
+        try:
+            if os.path.exists(results_dir):
+                for f in os.listdir(results_dir):
+                    file_path = os.path.join(results_dir, f)
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+        except Exception as e:
+            raise Exception(f"Error clearing results folder: {str(e)}")
 
 
 class ModelAnswersHandler:

@@ -456,10 +456,14 @@ class ProcessingTab(QWidget):
     def start_processing(self):
         """Start optimized batch processing"""
 
+  
+
         # give and exception when save answers button is enabled
         if self.btn_save_model_answers.isEnabled():
             QMessageBox.warning(self, "Error", "Please check & save model answers before processing.")
             return
+        # Clear result folder before processing
+        FileOperationHandler.clear_results_folder(self.project_path)
 
         try:
             # Initialize processing using handler
@@ -509,7 +513,10 @@ class ProcessingTab(QWidget):
             self.omr_processor.processing_complete.connect(self.worker_thread.quit)
             self.omr_processor.error_occurred.connect(self.worker_thread.quit)
             self.worker_thread.finished.connect(self.worker_thread.deleteLater)
-            
+
+            #disable mark all button when processing
+            self.btn_process_all.setEnabled(False)
+
             # Start processing
             self.worker_thread.start()
             
@@ -562,6 +569,8 @@ class ProcessingTab(QWidget):
 
     def finish_processing(self):
         """Verify all images were processed and allow navigation to other tabs"""
+        #enable  mark all button when processing is finished
+        self.btn_process_all.setEnabled(True)
         UIProcessingHandler.finish_processing_ui(
             self.processed_count,
             len(self.image_paths),
@@ -579,6 +588,8 @@ class ProcessingTab(QWidget):
 
     def cancel_processing(self):
         """Handle processing cancellation and reset state"""
+        #enable  mark all button when processing is cancelled
+        self.btn_process_all.setEnabled(True)
         UIProcessingHandler.cancel_processing_ui(
             self.worker_thread,
             getattr(self, 'omr_processor', None),

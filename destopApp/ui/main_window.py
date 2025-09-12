@@ -396,6 +396,8 @@ class MainWindow(QMainWindow):
                 return
             
             self.project_tab.load_project(project_path)
+            self.review_tab.load_project(project_path)
+
 
 
     def handle_project_created(self, project_path):
@@ -442,12 +444,17 @@ class MainWindow(QMainWindow):
 
 
     def handle_processing_started(self):
+        # Disable tabs during processing
         self.tab_widget.setTabEnabled(0, False)
+        self.tab_widget.setTabEnabled(2, False)
         self.status_bar.showMessage("Processing started...")
 
 
     def handle_processing_finished(self):
+        # Enable tabs after processing
         self.tab_widget.setTabEnabled(0, True)
+        self.tab_widget.setTabEnabled(2, True)
+        
         self.status_bar.showMessage("Processing finished")
 
 
@@ -481,6 +488,9 @@ class MainWindow(QMainWindow):
 
 
     def handle_processing_cancelled(self):
+        # Enable tabs after processing
+        self.tab_widget.setTabEnabled(0, True)
+        self.tab_widget.setTabEnabled(2, True)
         self.status_bar.showMessage("Processing cancelled by user")
 
 
