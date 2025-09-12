@@ -384,6 +384,12 @@ class MainWindow(QMainWindow):
         if not self.current_project and index in [1, 2]:
             QMessageBox.warning(self, "No Project", "Please create or open a project first.")
             self.tab_widget.setCurrentIndex(0)
+        # If Review tab selected → reload everything from project folder
+        if index == 2 and self.current_project:
+            # Always reload the project state
+            self.review_tab.load_project(self.current_project)
+
+           
 
 
     def open_project(self):
