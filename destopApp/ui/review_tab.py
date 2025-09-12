@@ -381,6 +381,100 @@ class ReviewTab(QWidget):
         images_layout.addWidget(self.images_list)
         right_layout.addWidget(images_group)
         
+        # File Rename Section
+        rename_group = QGroupBox("Rename Image File")
+        rename_layout = QVBoxLayout(rename_group)
+        rename_layout.setSpacing(8)
+        rename_layout.setContentsMargins(10, 10, 10, 10)
+        
+        # Current filename display
+        self.current_filename_label = QLabel("Current: No file selected")
+        self.current_filename_label.setStyleSheet("""
+            QLabel {
+                background: #2a2a2a;
+                border: 1px solid #404040;
+                border-radius: 4px;
+                padding: 6px 8px;
+                color: #cccccc;
+                font-size: 11px;
+                font-style: italic;
+            }
+        """)
+        
+        # New filename input
+        rename_input_layout = QHBoxLayout()
+        rename_input_layout.setSpacing(5)
+        
+        self.filename_input = QLineEdit()
+        self.filename_input.setPlaceholderText("Enter new filename...")
+        self.filename_input.setStyleSheet("""
+            QLineEdit {
+                background: #2a2a2a;
+                border: 1px solid #404040;
+                border-radius: 4px;
+                color: #e8e8e8;
+                font-size: 11px;
+                padding: 6px 8px;
+                min-height: 12px;
+            }
+            QLineEdit:focus {
+                border-color: #0078d4;
+                background: #323232;
+            }
+            QLineEdit::placeholder {
+                color: #888888;
+            }
+        """)
+        
+        self.file_extension_label = QLabel(".jpg")
+        self.file_extension_label.setStyleSheet("""
+            QLabel {
+                background: #3a3a3a;
+                border: 1px solid #505050;
+                border-radius: 4px;
+                padding: 6px 8px;
+                color: #cccccc;
+                font-size: 11px;
+                font-weight: 500;
+                min-width: 35px;
+            }
+        """)
+        
+        self.btn_rename_file = QPushButton("Rename")
+        self.btn_rename_file.setStyleSheet("""
+            QPushButton {
+                background: linear-gradient(180deg, #28a745 0%, #1e7e34 100%);
+                border: 1px solid #1e7e34;
+                font-weight: 600;
+                padding: 6px 12px;
+                border-radius: 4px;
+                font-size: 11px;
+                color: #ffffff;
+                min-width: 50px;
+                max-height: 26px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(180deg, #34ce57 0%, #28a745 100%);
+            }
+            QPushButton:pressed {
+                background: linear-gradient(180deg, #1e7e34 0%, #155724 100%);
+            }
+            QPushButton:disabled {
+                background: #3a3a3a;
+                border-color: #525252;
+                color: #7a7a7a;
+            }
+        """)
+        
+        rename_input_layout.addWidget(self.filename_input, 1)
+        rename_input_layout.addWidget(self.file_extension_label)
+        rename_input_layout.addWidget(self.btn_rename_file)
+        
+        rename_layout.addWidget(self.current_filename_label)
+        rename_layout.addLayout(rename_input_layout)
+        
+        right_layout.addWidget(rename_group)
+        
         # Question Selection Group (Enhanced UI)
         question_group = QGroupBox("Change Detected Answers")
         question_layout = QVBoxLayout(question_group)
@@ -391,21 +485,7 @@ class ReviewTab(QWidget):
         selection_info.setStyleSheet("QLabel { color: #b8b8b8; font-size: 12px; margin-bottom: 5px; }")
         question_layout.addWidget(selection_info)
         
-        # Keyboard shortcuts help
-        shortcuts_help = QLabel("🎯 Shortcuts: ↑↓ Navigate | 1-4 Select Answer | Enter Apply | Space Review")
-        shortcuts_help.setStyleSheet("""
-            QLabel { 
-                color: #888888; 
-                font-size: 10px; 
-                background: #1a1a1a;
-                border: 1px solid #333333;
-                border-radius: 4px;
-                padding: 4px 8px;
-                margin-bottom: 8px;
-            }
-        """)
-        shortcuts_help.setWordWrap(True)
-        question_layout.addWidget(shortcuts_help)
+  
         
         # Question Grid Container with Scroll (responsive height)
         scroll_area = QScrollArea()
@@ -659,6 +739,10 @@ class ReviewTab(QWidget):
         self.search_input.textChanged.connect(self.apply_filters)
         self.filter_combo.currentTextChanged.connect(self.apply_filters)
         self.images_list.itemClicked.connect(self.on_image_selected)
+        
+        # Connect file rename functionality
+        self.btn_rename_file.clicked.connect(self.rename_current_file)
+        self.filename_input.returnPressed.connect(self.rename_current_file)
 
     def select_question(self, question_num):
         """Handle question selection from grid"""
@@ -1012,6 +1096,9 @@ class ReviewTab(QWidget):
             
             # Update question button appearances for this image
             self.update_question_button_appearance()
+            
+            # Update filename display for rename section
+            self.update_filename_display()
                 
         except Exception as e:
             self.image_label.setText(f"Error loading image: {str(e)}")
@@ -1154,6 +1241,116 @@ class ReviewTab(QWidget):
 
         # Enable button after processing
         self.btn_change_answer.setEnabled(True)
+
+    def rename_current_file(self):
+        """Rename the current image file"""
+        if not self.image_paths or self.current_index >= len(self.image_paths):
+            QMessageBox.warning(self, "No File Selected", "Please select an image first")
+            return
+        
+        new_name = self.filename_input.text().strip()
+        if not new_name:
+            QMessageBox.warning(self, "Invalid Name", "Please enter a valid filename")
+            return
+        
+        # Remove any path separators and invalid characters
+        invalid_chars = '<>:"/\\|?*'
+        for char in invalid_chars:
+            new_name = new_name.replace(char, '')
+        
+        if not new_name:
+            QMessageBox.warning(self, "Invalid Name", "Filename contains only invalid characters")
+            return
+        
+        current_path = self.image_paths[self.current_index]
+        current_filename = os.path.basename(current_path)
+        current_name, current_ext = os.path.splitext(current_filename)
+        
+        # Don't allow changing extension
+        new_filename = new_name + current_ext
+        new_path = os.path.join(os.path.dirname(current_path), new_filename)
+        
+        # Check if file already exists
+        if os.path.exists(new_path) and new_path != current_path:
+            QMessageBox.warning(
+                self, 
+                "File Exists", 
+                f"A file named '{new_filename}' already exists"
+            )
+            return
+        
+        try:
+            # Disable button during processing
+            self.btn_rename_file.setEnabled(False)
+            
+            # Rename files in all relevant directories
+            directories = ["results", "original_images"]
+            renamed_paths = {}
+            
+            for directory in directories:
+                old_file_path = os.path.join(self.project_path, directory, current_filename)
+                new_file_path = os.path.join(self.project_path, directory, new_filename)
+                
+                if os.path.exists(old_file_path):
+                    os.rename(old_file_path, new_file_path)
+                    renamed_paths[directory] = new_file_path
+            
+            # Update database entry if handler is available
+            if self.handler:
+                try:
+                    # Get the sheet data for the old filename
+                    sheet_data = self.handler.get_sheet(current_filename)
+                    if sheet_data:
+                        # Update the filename in the database
+                        self.handler.update_filename(current_filename, new_filename)
+                except Exception as e:
+                    print(f"Warning: Could not update database entry: {e}")
+            
+            # Update the current image paths
+            self.image_paths[self.current_index] = new_path
+            
+            # Update original image paths if they exist
+            for i, orig_path in enumerate(self.original_image_paths):
+                if os.path.basename(orig_path) == current_filename:
+                    self.original_image_paths[i] = os.path.join(
+                        os.path.dirname(orig_path), new_filename
+                    )
+            
+            # Clear the input field
+            self.filename_input.clear()
+            
+            # Refresh displays
+            self.update_filename_display()
+            self.apply_filters()  # Refresh the image list
+            
+            QMessageBox.information(
+                self,
+                "File Renamed",
+                f"File renamed from '{current_filename}' to '{new_filename}'"
+            )
+            
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Rename Failed",
+                f"Failed to rename file: {str(e)}"
+            )
+        finally:
+            self.btn_rename_file.setEnabled(True)
+
+    def update_filename_display(self):
+        """Update the current filename display"""
+        if self.image_paths and self.current_index < len(self.image_paths):
+            current_filename = os.path.basename(self.image_paths[self.current_index])
+            name, ext = os.path.splitext(current_filename)
+            
+            self.current_filename_label.setText(f"Current: {current_filename}")
+            self.file_extension_label.setText(ext)
+            self.filename_input.setPlaceholderText(f"New name (currently: {name})")
+        else:
+            self.current_filename_label.setText("Current: No file selected")
+            self.file_extension_label.setText(".jpg")
+            self.filename_input.setPlaceholderText("Enter new filename...")
 
     def download_results(self):
         """Handle downloading of results to selected directory"""

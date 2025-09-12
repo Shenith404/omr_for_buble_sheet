@@ -115,6 +115,20 @@ class OMRJsonHandler:
             self._save_data(data)
             return True
         return False
+    
+    def update_filename(self, old_filename, new_filename):
+        """Update filename in the database"""
+        data = self._load_data()
+        if old_filename in data["data"]:
+            # Copy the data with new filename
+            data["data"][new_filename] = data["data"][old_filename]
+            # Remove old entry
+            del data["data"][old_filename]
+            # Update metadata
+            data["_metadata"]["total_sheets"] = len(data["data"])
+            self._save_data(data)
+            return True
+        return False
         
     def delete_answers_file(self):
         """Delete and recreate the answers.json file"""
