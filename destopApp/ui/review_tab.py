@@ -24,6 +24,7 @@ class ReviewTab(QWidget):
         super().__init__()
         self.project_path = None
         self.image_paths = []
+        self.filtered_image_paths = []  # Store filtered results
         self.original_image_paths = []  # Store original images before processing
         self.current_index = 0
         self.answers = {}
@@ -153,8 +154,62 @@ class ReviewTab(QWidget):
         
         # Image Navigation Group
         nav_group = QGroupBox("Image Navigation")
-        nav_layout = QHBoxLayout()
+        nav_layout = QVBoxLayout()
         nav_layout.setSpacing(15)
+        
+        # Search and Filter Row
+        search_layout = QHBoxLayout()
+        search_layout.setSpacing(10)
+        
+        # Search input
+        from PySide6.QtWidgets import QLineEdit
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("🔍 Search images...")
+        self.search_input.setStyleSheet("""
+            QLineEdit {
+                background: #2a2a2a;
+                border: 1px solid #404040;
+                border-radius: 6px;
+                color: #e8e8e8;
+                font-size: 13px;
+                padding: 8px 12px;
+                min-height: 20px;
+            }
+            QLineEdit:focus {
+                border-color: #0078d4;
+                background: #323232;
+            }
+            QLineEdit::placeholder {
+                color: #888888;
+            }
+        """)
+        
+        # Filter combo
+        self.filter_combo = QComboBox()
+        self.filter_combo.addItems(["All Images", "Reviewed Only", "Unreviewed Only"])
+        self.filter_combo.setStyleSheet("""
+            QComboBox {
+                background: #2a2a2a;
+                border: 1px solid #404040;
+                border-radius: 6px;
+                color: #e8e8e8;
+                font-size: 13px;
+                padding: 8px 12px;
+                min-width: 120px;
+                min-height: 20px;
+            }
+            QComboBox:focus {
+                border-color: #0078d4;
+                background: #323232;
+            }
+        """)
+        
+        search_layout.addWidget(self.search_input, 2)
+        search_layout.addWidget(self.filter_combo, 1)
+        
+        # Navigation buttons row
+        nav_buttons_layout = QHBoxLayout()
+        nav_buttons_layout.setSpacing(15)
         
         self.btn_prev = QPushButton("◀ Previous")
         self.btn_prev.setStyleSheet("""
@@ -194,9 +249,12 @@ class ReviewTab(QWidget):
         """)
         self.lbl_image_info.setAlignment(Qt.AlignCenter)
         
-        nav_layout.addWidget(self.btn_prev)
-        nav_layout.addWidget(self.lbl_image_info)
-        nav_layout.addWidget(self.btn_next)
+        nav_buttons_layout.addWidget(self.btn_prev)
+        nav_buttons_layout.addWidget(self.lbl_image_info)
+        nav_buttons_layout.addWidget(self.btn_next)
+        
+        nav_layout.addLayout(search_layout)
+        nav_layout.addLayout(nav_buttons_layout)
         nav_group.setLayout(nav_layout)
         
         # Image Display
@@ -215,7 +273,7 @@ class ReviewTab(QWidget):
             }
         """)
         self.image_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.image_label.setText("📊 No results to review\n\nOpen a project from the Project tab to begin")
+        self.image_label.setText(" No results to review\n\nOpen a project from the Project tab to begin")
         
         # Results Info Group
         info_group = QGroupBox("Results Information")
@@ -256,7 +314,7 @@ class ReviewTab(QWidget):
         right_layout.setSpacing(20)
         
         # Download Results Button (added at top of right panel)
-        self.btn_download_results = QPushButton("📥 Download Results")
+        self.btn_download_results = QPushButton(" Download Results")
         self.btn_download_results.setStyleSheet("""
             QPushButton {
                 background: linear-gradient(180deg, #28a745 0%, #1e7e34 100%);
@@ -278,34 +336,72 @@ class ReviewTab(QWidget):
         """)
         right_layout.addWidget(self.btn_download_results)
         
-        # Question Selection Group
+        # Image List Group
+        from PySide6.QtWidgets import QListWidget, QListWidgetItem
+        images_group = QGroupBox("Images")
+        images_layout = QVBoxLayout(images_group)
+        images_layout.setSpacing(10)
+        
+        self.images_list = QListWidget()
+        self.images_list.setStyleSheet("""
+            QListWidget {
+                background: #2a2a2a;
+                border: 1px solid #404040;
+                border-radius: 6px;
+                color: #e8e8e8;
+                font-size: 12px;
+                padding: 5px;
+                selection-background-color: #0078d4;
+                selection-color: #ffffff;
+                outline: none;
+            }
+            QListWidget::item {
+                background: transparent;
+                border: none;
+                border-radius: 4px;
+                padding: 8px 10px;
+                margin: 2px 0px;
+            }
+            QListWidget::item:hover {
+                background: #404040;
+            }
+            QListWidget::item:selected {
+                background: #0078d4;
+                color: #ffffff;
+            }
+            QListWidget::item:selected:hover {
+                background: #1084d8;
+            }
+        """)
+        self.images_list.setMaximumHeight(200)
+        
+        images_layout.addWidget(self.images_list)
+        right_layout.addWidget(images_group)
+        
+        # Question Selection Group (made more compact)
         question_group = QGroupBox("Change Detected Answers")
         question_layout = QVBoxLayout(question_group)
-        question_layout.setSpacing(15)
+        question_layout.setSpacing(10)
         
-        # Question Number Section
-        question_label = QLabel("Question Number:")
-        question_label.setStyleSheet("QLabel { color: #e8e8e8; font-weight: 500; margin-bottom: 5px; }")
-        
-        # Create a horizontal layout for question number input
-        question_input_layout = QHBoxLayout()
-        question_input_layout.setSpacing(8)
+        # Question Number Section (more compact)
+        question_label = QLabel("Question:")
+        question_label.setStyleSheet("QLabel { color: #e8e8e8; font-weight: 500; margin-bottom: 3px; }")
         
         self.question_spinbox = QSpinBox()
         self.question_spinbox.setRange(1, 50)
         self.question_spinbox.setValue(1)
         self.question_spinbox.setSuffix(" / 50")
-        self.question_spinbox.setMinimumWidth(120)
+        self.question_spinbox.setMinimumWidth(100)
         self.question_spinbox.setStyleSheet("""
             QSpinBox {
                 background: #2a2a2a;
                 border: 1px solid #404040;
                 border-radius: 6px;
                 color: #e8e8e8;
-                font-size: 14px;
+                font-size: 13px;
                 font-weight: 600;
-                padding: 10px 12px;
-                min-height: 20px;
+                padding: 8px 10px;
+                min-height: 15px;
             }
             QSpinBox:focus {
                 border-color: #0078d4;
@@ -316,7 +412,7 @@ class ReviewTab(QWidget):
                 border: none;
                 border-left: 1px solid #505050;
                 border-top-right-radius: 6px;
-                width: 20px;
+                width: 18px;
                 color: #e8e8e8;
             }
             QSpinBox::up-button:hover {
@@ -324,18 +420,18 @@ class ReviewTab(QWidget):
             }
             QSpinBox::up-arrow {
                 image: none;
-                border-left: 4px solid transparent;
-                border-right: 4px solid transparent;
-                border-bottom: 4px solid #e8e8e8;
-                width: 8px;
-                height: 8px;
+                border-left: 3px solid transparent;
+                border-right: 3px solid transparent;
+                border-bottom: 3px solid #e8e8e8;
+                width: 6px;
+                height: 6px;
             }
             QSpinBox::down-button {
                 background: #404040;
                 border: none;
                 border-left: 1px solid #505050;
                 border-bottom-right-radius: 6px;
-                width: 20px;
+                width: 18px;
                 color: #e8e8e8;
             }
             QSpinBox::down-button:hover {
@@ -343,80 +439,17 @@ class ReviewTab(QWidget):
             }
             QSpinBox::down-arrow {
                 image: none;
-                border-left: 4px solid transparent;
-                border-right: 4px solid transparent;
-                border-top: 4px solid #e8e8e8;
-                width: 8px;
-                height: 8px;
+                border-left: 3px solid transparent;
+                border-right: 3px solid transparent;
+                border-top: 3px solid #e8e8e8;
+                width: 6px;
+                height: 6px;
             }
         """)
         
-        # Quick jump buttons for common question ranges
-        btn_q1_10 = QPushButton("1-10")
-        btn_q11_20 = QPushButton("11-20")
-        btn_q21_30 = QPushButton("21-30")
-        btn_q31_40 = QPushButton("31-40")
-        btn_q41_50 = QPushButton("41-50")
-        
-        quick_jump_style = """
-            QPushButton {
-                background: #404040;
-                border: 1px solid #505050;
-                border-radius: 4px;
-                color: #e8e8e8;
-                font-size: 11px;
-                font-weight: 500;
-                padding: 6px 8px;
-                min-width: 35px;
-                max-width: 45px;
-            }
-            QPushButton:hover {
-                background: #0078d4;
-                border-color: #1084d8;
-            }
-            QPushButton:pressed {
-                background: #005a9e;
-            }
-        """
-        
-        for btn in [btn_q1_10, btn_q11_20, btn_q21_30, btn_q31_40, btn_q41_50]:
-            btn.setStyleSheet(quick_jump_style)
-        
-        # Connect quick jump buttons
-        btn_q1_10.clicked.connect(lambda: self.question_spinbox.setValue(1))
-        btn_q11_20.clicked.connect(lambda: self.question_spinbox.setValue(11))
-        btn_q21_30.clicked.connect(lambda: self.question_spinbox.setValue(21))
-        btn_q31_40.clicked.connect(lambda: self.question_spinbox.setValue(31))
-        btn_q41_50.clicked.connect(lambda: self.question_spinbox.setValue(41))
-        
-        question_input_layout.addWidget(self.question_spinbox)
-        question_input_layout.addStretch()
-        
-        # Quick jump buttons layout
-        quick_jump_layout = QHBoxLayout()
-        quick_jump_layout.setSpacing(4)
-        
-        quick_jump_label = QLabel("Quick jump:")
-        quick_jump_label.setStyleSheet("""
-            QLabel { 
-                color: #a0a0a0; 
-                font-size: 11px; 
-                font-weight: 500; 
-                margin-right: 4px;
-            }
-        """)
-        
-        quick_jump_layout.addWidget(quick_jump_label)
-        quick_jump_layout.addWidget(btn_q1_10)
-        quick_jump_layout.addWidget(btn_q11_20)
-        quick_jump_layout.addWidget(btn_q21_30)
-        quick_jump_layout.addWidget(btn_q31_40)
-        quick_jump_layout.addWidget(btn_q41_50)
-        quick_jump_layout.addStretch()
-        
-        # Answer Section
-        answer_label = QLabel("Correct Answer:")
-        answer_label.setStyleSheet("QLabel { color: #e8e8e8; font-weight: 500; margin-bottom: 5px; }")
+        # Answer Section (more compact)
+        answer_label = QLabel("Answer:")
+        answer_label.setStyleSheet("QLabel { color: #e8e8e8; font-weight: 500; margin-bottom: 3px; }")
         
         self.answer_combo = QComboBox()
         self.answer_combo.addItems([str(i) for i in range(1, 5)])
@@ -427,8 +460,8 @@ class ReviewTab(QWidget):
                 border-radius: 6px;
                 color: #e8e8e8;
                 font-size: 13px;
-                padding: 10px 12px;
-                min-height: 20px;
+                padding: 8px 10px;
+                min-height: 15px;
                 font-weight: 500;
             }
             QComboBox:focus {
@@ -438,15 +471,16 @@ class ReviewTab(QWidget):
         """)
         
         # Change Answer button
-        self.btn_change_answer = QPushButton("🔄 Update Answer")
+        self.btn_change_answer = QPushButton(" Update Answer")
         self.btn_change_answer.setStyleSheet("""
             QPushButton {
                 background: linear-gradient(180deg, #007bff 0%, #0056b3 100%);
                 border: 1px solid #0056b3;
                 font-weight: 600;
-                padding: 10px 16px;
+                padding: 8px 12px;
                 border-radius: 6px;
-                min-height: 20px;
+                min-height: 15px;
+                font-size: 12px;
             }
             QPushButton:hover {
                 background: linear-gradient(180deg, #1a8cff 0%, #007bff 100%);
@@ -459,8 +493,7 @@ class ReviewTab(QWidget):
         """)
         
         question_layout.addWidget(question_label)
-        question_layout.addLayout(question_input_layout)
-        question_layout.addLayout(quick_jump_layout)
+        question_layout.addWidget(self.question_spinbox)
         question_layout.addWidget(answer_label)
         question_layout.addWidget(self.answer_combo)
         question_layout.addWidget(self.btn_change_answer)
@@ -507,12 +540,125 @@ class ReviewTab(QWidget):
         self.btn_mark_reviewed.clicked.connect(self.mark_as_reviewed)
         self.btn_change_answer.clicked.connect(self.change_detected_answer)
         self.btn_download_results.clicked.connect(self.download_results)
+        
+        # Connect search and filter functionality
+        self.search_input.textChanged.connect(self.apply_filters)
+        self.filter_combo.currentTextChanged.connect(self.apply_filters)
+        self.images_list.itemClicked.connect(self.on_image_selected)
+
+    def apply_filters(self):
+        """Apply search and review status filters to image list"""
+        if not self.image_paths:
+            self.filtered_image_paths = []
+            self.update_image_list()
+            return
+            
+        search_text = self.search_input.text().lower()
+        filter_type = self.filter_combo.currentText()
+        
+        # Start with all images
+        filtered_paths = self.image_paths.copy()
+        
+        # Apply search filter
+        if search_text:
+            filtered_paths = [
+                path for path in filtered_paths
+                if search_text in os.path.basename(path).lower()
+            ]
+        
+        # Apply review status filter
+        if filter_type == "Reviewed Only":
+            filtered_paths = [
+                path for path in filtered_paths
+                if self.is_image_reviewed(os.path.basename(path))
+            ]
+        elif filter_type == "Unreviewed Only":
+            filtered_paths = [
+                path for path in filtered_paths
+                if not self.is_image_reviewed(os.path.basename(path))
+            ]
+        
+        self.filtered_image_paths = filtered_paths
+        self.update_image_list()
+        
+        # Update current index if current image is not in filtered results
+        if self.image_paths and self.current_index < len(self.image_paths):
+            current_image_path = self.image_paths[self.current_index]
+            if current_image_path not in self.filtered_image_paths:
+                # Reset to first filtered image if available
+                if self.filtered_image_paths:
+                    self.current_index = self.image_paths.index(self.filtered_image_paths[0])
+                    self.show_current_image()
+    
+    def is_image_reviewed(self, filename):
+        """Check if image is reviewed using database"""
+        if not self.handler:
+            return filename in self.reviewed_images
+        
+        sheet_data = self.handler.get_sheet(filename)
+        if sheet_data:
+            return sheet_data.get("reviewed", False)
+        return filename in self.reviewed_images
+    
+    def update_image_list(self):
+        """Update the image list widget with filtered results"""
+        self.images_list.clear()
+        
+        for image_path in self.filtered_image_paths:
+            filename = os.path.basename(image_path)
+            is_reviewed = self.is_image_reviewed(filename)
+            
+            # Create list item with status indicator
+            status_icon = "✅" if is_reviewed else "⏳"
+            item_text = f"{status_icon} {filename}"
+            
+            from PySide6.QtWidgets import QListWidgetItem
+            item = QListWidgetItem(item_text)
+            item.setData(Qt.UserRole, image_path)  # Store full path in item data
+            
+            # Set different colors for reviewed/unreviewed
+            if is_reviewed:
+                item.setToolTip(f"Reviewed: {filename}")
+            else:
+                item.setToolTip(f"Unreviewed: {filename}")
+            
+            self.images_list.addItem(item)
+        
+        # Update image count info
+        total_images = len(self.image_paths)
+        filtered_count = len(self.filtered_image_paths)
+        
+        if total_images > 0:
+            if filtered_count == total_images:
+                count_text = f"{total_images} images"
+            else:
+                count_text = f"{filtered_count}/{total_images} images"
+            
+            if self.image_paths and self.current_index < len(self.image_paths):
+                current_image_path = self.image_paths[self.current_index]
+                if current_image_path in self.filtered_image_paths:
+                    filtered_index = self.filtered_image_paths.index(current_image_path) + 1
+                    count_text = f"{filtered_index}/{filtered_count} ({count_text})"
+        else:
+            count_text = "No images loaded"
+            
+        self.lbl_image_info.setText(count_text)
+    
+    def on_image_selected(self, item):
+        """Handle image selection from the list"""
+        image_path = item.data(Qt.UserRole)
+        if image_path in self.image_paths:
+            self.current_index = self.image_paths.index(image_path)
+            self.show_current_image()
+            self.update_navigation_buttons()
+            self.update_image_list()  # Update to highlight current selection
 
     def load_project(self, project_path):
         """Load processed images from project's results folder"""
         self.project_path = project_path
         self.lbl_project.setText(f"Reviewing: {os.path.basename(project_path)}")
         self.image_paths = []
+        self.filtered_image_paths = []
         self.answers = {}
         self.reviewed_images = set()
         
@@ -530,7 +676,9 @@ class ReviewTab(QWidget):
         # Load model answers
         self.model_answers = self.handler.read_model_answers()
         
-       
+        # Initialize filtered paths and apply current filters
+        self.filtered_image_paths = self.image_paths.copy()
+        self.apply_filters()
         
         if self.image_paths:
             self.current_index = 0
@@ -554,9 +702,13 @@ class ReviewTab(QWidget):
         
         # Clear current state since these are not processed images yet
         self.image_paths = []
+        self.filtered_image_paths = []
         self.answers = {}
         self.reviewed_images = set()
         self.current_index = 0
+        
+        # Clear the image list
+        self.images_list.clear()
         
         # Show message that processing is needed
         if self.original_image_paths:
@@ -587,11 +739,16 @@ class ReviewTab(QWidget):
                 Qt.SmoothTransformation
             ))
             
-            # Update image info
-            self.lbl_image_info.setText(
-                f"Image {self.current_index + 1}/{len(self.image_paths)}\n"
-                f"{filename}"
-            )
+            # Update image info with filtered count
+            self.update_image_list()
+            
+            # Highlight current image in the list
+            for i in range(self.images_list.count()):
+                item = self.images_list.item(i)
+                item_path = item.data(Qt.UserRole)
+                if item_path == image_path:
+                    self.images_list.setCurrentItem(item)
+                    break
             
             # Update review button state
             self.update_review_button_state()
@@ -629,7 +786,7 @@ class ReviewTab(QWidget):
             return
             
         current_image = os.path.basename(self.image_paths[self.current_index])
-        is_reviewed = current_image in self.reviewed_images
+        is_reviewed = self.is_image_reviewed(current_image)
         
         self.btn_mark_reviewed.setEnabled(not is_reviewed)
         self.btn_mark_reviewed.setText(
@@ -643,7 +800,7 @@ class ReviewTab(QWidget):
             
         current_image = os.path.basename(self.image_paths[self.current_index])
         self.reviewed_images.add(current_image)
-        self.update_review_button_state()
+        
         image_path = os.path.join(
                 self.project_path, "results", current_image
             )
@@ -661,6 +818,11 @@ class ReviewTab(QWidget):
 
             # Update db
             self.handler.mark_for_review(current_image, True)
+            
+            # Update review button state and refresh filters
+            self.update_review_button_state()
+            self.apply_filters()  # Refresh the filtered list to reflect new status
+            
         except Exception as e:
             print("Error occurs when draw stamps", e)
 
@@ -706,6 +868,9 @@ class ReviewTab(QWidget):
             # Update the displayed image
             self.image_paths[self.current_index] = result_image_path
             self.show_current_image()
+            
+            # Refresh the image list to maintain current state
+            self.apply_filters()
 
             # Show confirmation
             QMessageBox.information(
