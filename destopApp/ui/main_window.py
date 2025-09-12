@@ -44,8 +44,7 @@ class MainWindow(QMainWindow):
 
 
     def setup_ui(self):
-        # Menu bar
-        self.setup_menu()
+        
 
         # Central layout
         central_widget = QWidget()
@@ -361,21 +360,7 @@ class MainWindow(QMainWindow):
 
 
 
-    def setup_menu(self):
-        menubar = self.menuBar()
-        
-        # File menu
-        file_menu = menubar.addMenu("File")
-        
-        new_project = file_menu.addAction("New Project")
-        new_project.triggered.connect(lambda: self.tab_widget.setCurrentIndex(0))
-        
-        open_project = file_menu.addAction("Open Project")
-        open_project.triggered.connect(self.open_project)
-        
-        file_menu.addSeparator()
-        exit_action = file_menu.addAction("Exit")
-        exit_action.triggered.connect(self.close)
+   
 
 
     def setup_connections(self):

@@ -393,7 +393,7 @@ class ProcessingTab(QWidget):
         # Load images with error handling
         try:
             # Load model answers if available
-            self.save_model_answers()
+            self.save_model_answers(True)
             # disable save answers button
             self.btn_save_model_answers.setEnabled(False)  # Disable the button after loading
             
@@ -699,11 +699,12 @@ class ProcessingTab(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "Delete Error", str(e))
 
-    def save_model_answers(self):
+    def save_model_answers(self,isInitialSave=False):
         """Load or create model answers XLSX file and open it for editing"""
         try:
             self.model_answers = ModelAnswersHandler.save_model_answers_workflow(self.project_path)
-            QMessageBox.information(self, "Success", "Model answers saved successfully!")
+            if not isInitialSave:
+                QMessageBox.information(self, "Success", "Model answers saved successfully!")
             # Disable save answers button
             self.btn_save_model_answers.setEnabled(False)
 
@@ -723,5 +724,6 @@ class ProcessingTab(QWidget):
         """Open the model answers XLSX file for editing"""
         try:
             ModelAnswersHandler.edit_answers_workflow(self.project_path)
+            self.btn_save_model_answers.setEnabled(True)  # Enable save button when editing
         except Exception as e:
             QMessageBox.warning(self, "Error", str(e))
