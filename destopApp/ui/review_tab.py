@@ -3,7 +3,8 @@ import json
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox,
     QPushButton, QLabel, QSizePolicy, QFileDialog,
-    QComboBox, QSpacerItem, QMessageBox, QSpinBox
+    QComboBox, QSpacerItem, QMessageBox, QSpinBox,
+    QGridLayout, QScrollArea, QFrame, QToolTip
 )
 from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt, Signal
@@ -33,6 +34,8 @@ class ReviewTab(QWidget):
         self.setup_connections()
         self.handler = None
         self.model_answers = []
+        self.selected_question = 1  # Track currently selected question
+        self.question_buttons = []  # Store question button references
     
         
     def setup_ui(self):
@@ -378,112 +381,222 @@ class ReviewTab(QWidget):
         images_layout.addWidget(self.images_list)
         right_layout.addWidget(images_group)
         
-        # Question Selection Group (made more compact)
+        # Question Selection Group (Enhanced UI)
         question_group = QGroupBox("Change Detected Answers")
         question_layout = QVBoxLayout(question_group)
-        question_layout.setSpacing(10)
+        question_layout.setSpacing(12)
         
-        # Question Number Section (more compact)
-        question_label = QLabel("Question:")
-        question_label.setStyleSheet("QLabel { color: #e8e8e8; font-weight: 500; margin-bottom: 3px; }")
+        # Question Selection Info
+        selection_info = QLabel("Click a question number to select:")
+        selection_info.setStyleSheet("QLabel { color: #b8b8b8; font-size: 12px; margin-bottom: 5px; }")
+        question_layout.addWidget(selection_info)
         
-        self.question_spinbox = QSpinBox()
-        self.question_spinbox.setRange(1, 50)
-        self.question_spinbox.setValue(1)
-        self.question_spinbox.setSuffix(" / 50")
-        self.question_spinbox.setMinimumWidth(100)
-        self.question_spinbox.setStyleSheet("""
-            QSpinBox {
+        # Keyboard shortcuts help
+        shortcuts_help = QLabel("🎯 Shortcuts: ↑↓ Navigate | 1-4 Select Answer | Enter Apply | Space Review")
+        shortcuts_help.setStyleSheet("""
+            QLabel { 
+                color: #888888; 
+                font-size: 10px; 
+                background: #1a1a1a;
+                border: 1px solid #333333;
+                border-radius: 4px;
+                padding: 4px 8px;
+                margin-bottom: 8px;
+            }
+        """)
+        shortcuts_help.setWordWrap(True)
+        question_layout.addWidget(shortcuts_help)
+        
+        # Question Grid Container with Scroll (responsive height)
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setMinimumHeight(120)  # Minimum height for usability
+        scroll_area.setMaximumHeight(200)  # Maximum height to prevent taking too much space
+        scroll_area.setStyleSheet("""
+            QScrollArea {
                 background: #2a2a2a;
                 border: 1px solid #404040;
+                border-radius: 8px;
+            }
+            QScrollBar:vertical {
+                background: #1e1e1e;
+                width: 12px;
                 border-radius: 6px;
-                color: #e8e8e8;
-                font-size: 13px;
-                font-weight: 600;
-                padding: 8px 10px;
-                min-height: 15px;
             }
-            QSpinBox:focus {
-                border-color: #0078d4;
-                background: #323232;
+            QScrollBar::handle:vertical {
+                background: #505050;
+                border-radius: 6px;
+                min-height: 20px;
             }
-            QSpinBox::up-button {
-                background: #404040;
-                border: none;
-                border-left: 1px solid #505050;
-                border-top-right-radius: 6px;
-                width: 18px;
-                color: #e8e8e8;
-            }
-            QSpinBox::up-button:hover {
-                background: #0078d4;
-            }
-            QSpinBox::up-arrow {
-                image: none;
-                border-left: 3px solid transparent;
-                border-right: 3px solid transparent;
-                border-bottom: 3px solid #e8e8e8;
-                width: 6px;
-                height: 6px;
-            }
-            QSpinBox::down-button {
-                background: #404040;
-                border: none;
-                border-left: 1px solid #505050;
-                border-bottom-right-radius: 6px;
-                width: 18px;
-                color: #e8e8e8;
-            }
-            QSpinBox::down-button:hover {
-                background: #0078d4;
-            }
-            QSpinBox::down-arrow {
-                image: none;
-                border-left: 3px solid transparent;
-                border-right: 3px solid transparent;
-                border-top: 3px solid #e8e8e8;
-                width: 6px;
-                height: 6px;
+            QScrollBar::handle:vertical:hover {
+                background: #606060;
             }
         """)
         
-        # Answer Section (more compact)
-        answer_label = QLabel("Answer:")
+        # Question Grid Widget
+        grid_widget = QWidget()
+        grid_layout = QGridLayout(grid_widget)
+        grid_layout.setSpacing(2)  # Further reduced spacing for smaller buttons
+        grid_layout.setContentsMargins(6, 6, 6, 6)
+        
+        # Create question buttons (1-50)
+        self.question_buttons = []
+        for i in range(50):
+            question_num = i + 1
+            btn = QPushButton(str(question_num))
+            btn.setFixedSize(22, 22)  # Even smaller size
+            btn.setCheckable(True)
+            btn.clicked.connect(lambda checked, q=question_num: self.select_question(q))
+            
+            # Style for question buttons with zero padding and smaller size
+            btn.setStyleSheet("""
+                QPushButton {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #3a3a3a, stop:1 #2a2a2a);
+                    border: 1px solid #505050;
+                    border-radius: 4px;
+                    color: #e8e8e8;
+                    font-size: 11px;
+                    font-weight: 600;
+                    padding: 0px;
+                    margin: 0px;
+                    min-width: 20px;
+                    min-height: 20px;
+                    max-width: 22px;
+                    max-height: 22px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #4a4a4a, stop:1 #3a3a3a);
+                    border: 2px solid #0078d4;
+                    color: #ffffff;
+                }
+                QPushButton:checked {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #0078d4, stop:1 #005a9e);
+                    border: 2px solid #0078d4;
+                    color: #ffffff;
+                    font-weight: 700;
+                }
+                QPushButton:checked:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #1084d8, stop:1 #0066b2);
+                    border: 2px solid #1084d8;
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #005a9e, stop:1 #004578);
+                }
+            """)
+            
+            # Add tooltip
+            btn.setToolTip(f"Question {question_num}\nClick to select")
+            
+            self.question_buttons.append(btn)
+            grid_layout.addWidget(btn, i // 10, i % 10)  # 10 columns per row
+        
+        # Set first question as selected by default
+        if self.question_buttons:
+            self.question_buttons[0].setChecked(True)
+        
+        scroll_area.setWidget(grid_widget)
+        question_layout.addWidget(scroll_area)
+        
+        # Selected Question Info
+        self.selected_question_label = QLabel("Selected: Question 1")
+        self.selected_question_label.setStyleSheet("""
+            QLabel {
+                background: #2a2a2a;
+                border: 1px solid #404040;
+                border-radius: 6px;
+                padding: 8px 12px;
+                color: #ffffff;
+                font-weight: 600;
+                font-size: 13px;
+            }
+        """)
+        question_layout.addWidget(self.selected_question_label)
+        
+        # Answer Section (Enhanced)
+        answer_label = QLabel("New Answer:")
         answer_label.setStyleSheet("QLabel { color: #e8e8e8; font-weight: 500; margin-bottom: 3px; }")
         
+        # Answer buttons instead of combo box for better UX
+        answer_buttons_layout = QHBoxLayout()
+        answer_buttons_layout.setSpacing(6)
+        
+        self.answer_buttons = []
+        answer_labels = ['A', 'B', 'C', 'D']
+        for i, label in enumerate(answer_labels):
+            btn = QPushButton(f"{i+1} ({label})")
+            btn.setCheckable(True)
+            btn.clicked.connect(lambda checked, ans=i+1: self.select_answer(ans))
+            btn.setStyleSheet("""
+                QPushButton {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #3a3a3a, stop:1 #2a2a2a);
+                    border: 1px solid #505050;
+                    border-radius: 8px;
+                    color: #e8e8e8;
+                    font-size: 12px;
+                    font-weight: 500;
+                    padding: 8px 4px;
+                    min-width: 55px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #4a4a4a, stop:1 #3a3a3a);
+                    border: 2px solid #0078d4;
+                    color: #ffffff;
+                }
+                QPushButton:checked {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #28a745, stop:1 #1e7e34);
+                    border: 2px solid #28a745;
+                    color: #ffffff;
+                    font-weight: 600;
+                }
+                QPushButton:checked:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #34ce57, stop:1 #28a745);
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 #1e7e34, stop:1 #155724);
+                }
+            """)
+            self.answer_buttons.append(btn)
+            answer_buttons_layout.addWidget(btn)
+        
+        # Set first answer as selected by default
+        if self.answer_buttons:
+            self.answer_buttons[0].setChecked(True)
+        
+        # Legacy combo box (hidden but kept for compatibility)
         self.answer_combo = QComboBox()
         self.answer_combo.addItems([str(i) for i in range(1, 5)])
-        self.answer_combo.setStyleSheet("""
-            QComboBox {
-                background: #2a2a2a;
-                border: 1px solid #404040;
-                border-radius: 6px;
-                color: #e8e8e8;
-                font-size: 13px;
-                padding: 8px 10px;
-                min-height: 15px;
-                font-weight: 500;
-            }
-            QComboBox:focus {
-                border-color: #0078d4;
-                background: #323232;
-            }
-        """)
+        self.answer_combo.hide()  # Hide the old combo box
         
-        # Change Answer button
-        self.btn_change_answer = QPushButton(" Update Answer")
+        # Change Answer button (Enhanced)
+        self.btn_change_answer = QPushButton("🔄 Update Answer")
         self.btn_change_answer.setStyleSheet("""
             QPushButton {
                 background: linear-gradient(180deg, #007bff 0%, #0056b3 100%);
                 border: 1px solid #0056b3;
                 font-weight: 600;
-                padding: 8px 12px;
-                border-radius: 6px;
+                padding: 10px 16px;
+                border-radius: 8px;
+                font-size: 13px;
+                color: #ffffff;
                 min-height: 15px;
-                font-size: 12px;
             }
             QPushButton:hover {
                 background: linear-gradient(180deg, #1a8cff 0%, #007bff 100%);
+            }
+            QPushButton:pressed {
+                background: linear-gradient(180deg, #0056b3 0%, #004085 100%);
             }
             QPushButton:disabled {
                 background: #3a3a3a;
@@ -492,10 +605,8 @@ class ReviewTab(QWidget):
             }
         """)
         
-        question_layout.addWidget(question_label)
-        question_layout.addWidget(self.question_spinbox)
         question_layout.addWidget(answer_label)
-        question_layout.addWidget(self.answer_combo)
+        question_layout.addLayout(answer_buttons_layout)
         question_layout.addWidget(self.btn_change_answer)
         
         # Add question group to right layout
@@ -532,6 +643,9 @@ class ReviewTab(QWidget):
         self.update_navigation_buttons()
         self.update_review_button_state()
         
+        # Enable focus for keyboard shortcuts
+        self.setFocusPolicy(Qt.StrongFocus)
+        
 
     def setup_connections(self):
         """Connect all signals and slots"""
@@ -545,6 +659,149 @@ class ReviewTab(QWidget):
         self.search_input.textChanged.connect(self.apply_filters)
         self.filter_combo.currentTextChanged.connect(self.apply_filters)
         self.images_list.itemClicked.connect(self.on_image_selected)
+
+    def select_question(self, question_num):
+        """Handle question selection from grid"""
+        self.selected_question = question_num
+        
+        # Update button states
+        for i, btn in enumerate(self.question_buttons):
+            btn.setChecked(i + 1 == question_num)
+        
+        # Update selected question label
+        self.selected_question_label.setText(f"Selected: Question {question_num}")
+        
+        # Update question button appearance with current answer if available
+        self.update_question_button_appearance(question_num)
+    
+    def select_answer(self, answer_num):
+        """Handle answer selection from buttons"""
+        # Update answer button states
+        for i, btn in enumerate(self.answer_buttons):
+            btn.setChecked(i + 1 == answer_num)
+        
+        # Update the hidden combo box for compatibility
+        self.answer_combo.setCurrentText(str(answer_num))
+    
+    def update_question_button_appearance(self, question_num=None):
+        """Update question button appearance to show current answers"""
+        if not self.image_paths or self.current_index >= len(self.image_paths):
+            return
+        
+        current_image = os.path.basename(self.image_paths[self.current_index])
+        
+        # Get current answers for this image from database
+        try:
+            if self.handler:
+                sheet_data = self.handler.get_sheet(current_image)
+                if sheet_data and 'detected_answers' in sheet_data:
+                    answers = sheet_data['detected_answers']
+                    for i, btn in enumerate(self.question_buttons):
+                        q_num = i + 1
+                        if i < len(answers):
+                            answer = answers[i]  # 0-based index
+                            
+                            # Update button style and tooltip based on answer
+                            if answer == -1:  # No answer detected
+                                btn.setStyleSheet("""
+                                    QPushButton {
+                                        background: #4a4a4a;
+                                        border: 1px solid #666666;
+                                        border-radius: 4px;
+                                        color: #cccccc;
+                                        font-size: 11px;
+                                        font-weight: 600;
+                                        padding: 0px;
+                                        margin: 0px;
+                                        min-width: 20px;
+                                        min-height: 20px;
+                                        max-width: 22px;
+                                        max-height: 22px;
+                                    }
+                                    QPushButton:hover {
+                                        background: #5a5a5a;
+                                        border-color: #0078d4;
+                                    }
+                                    QPushButton:checked {
+                                        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                            stop:0 #0078d4, stop:1 #005a9e);
+                                        border: 2px solid #0078d4;
+                                        color: #ffffff;
+                                    }
+                                """)
+                                btn.setToolTip(f"Question {q_num}\nNo answer detected")
+                            else:
+                                # Convert 1-based answer to letter (2->A, 3->B, 4->C, 5->D)
+                                answer_letter = chr(ord('A') + answer - 2) if answer >= 2 else '?'
+                                btn.setStyleSheet("""
+                                    QPushButton {
+                                        background: #2d5a2d;
+                                        border: 1px solid #4a8f4a;
+                                        border-radius: 4px;
+                                        color: #ffffff;
+                                        font-size: 9px;
+                                        font-weight: 600;
+                                        padding: 0px;
+                                        margin: 0px;
+                                        min-width: 20px;
+                                        min-height: 20px;
+                                        max-width: 22px;
+                                        max-height: 22px;
+                                    }
+                                    QPushButton:hover {
+                                        background: #3a6a3a;
+                                        border-color: #0078d4;
+                                    }
+                                    QPushButton:checked {
+                                        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                            stop:0 #0078d4, stop:1 #005a9e);
+                                        border: 2px solid #0078d4;
+                                        color: #ffffff;
+                                    }
+                                """)
+                                btn.setToolTip(f"Question {q_num}\nDetected: {answer_letter}")
+                                
+                                # Show answer letter on button
+                                btn.setText(f"{q_num}\n{answer_letter}")
+                        else:
+                            # Reset to default style
+                            btn.setStyleSheet("""
+                                QPushButton {
+                                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                        stop:0 #3a3a3a, stop:1 #2a2a2a);
+                                    border: 1px solid #505050;
+                                    border-radius: 4px;
+                                    color: #e8e8e8;
+                                    font-size: 11px;
+                                    font-weight: 600;
+                                    padding: 0px;
+                                    margin: 0px;
+                                    min-width: 20px;
+                                    min-height: 20px;
+                                    max-width: 22px;
+                                    max-height: 22px;
+                                }
+                                QPushButton:hover {
+                                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                        stop:0 #4a4a4a, stop:1 #3a3a3a);
+                                    border: 2px solid #0078d4;
+                                    color: #ffffff;
+                                }
+                                QPushButton:checked {
+                                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                        stop:0 #0078d4, stop:1 #005a9e);
+                                    border: 2px solid #0078d4;
+                                    color: #ffffff;
+                                }
+                            """)
+                            btn.setText(str(q_num))
+                            btn.setToolTip(f"Question {q_num}\nClick to select")
+        except Exception as e:
+            print(f"Error updating question buttons: {e}")
+            # Reset all buttons to default on error
+            for i, btn in enumerate(self.question_buttons):
+                btn.setText(str(i + 1))
+                btn.setToolTip(f"Question {i + 1}\nClick to select")
 
     def apply_filters(self):
         """Apply search and review status filters to image list"""
@@ -752,6 +1009,9 @@ class ReviewTab(QWidget):
             
             # Update review button state
             self.update_review_button_state()
+            
+            # Update question button appearances for this image
+            self.update_question_button_appearance()
                 
         except Exception as e:
             self.image_label.setText(f"Error loading image: {str(e)}")
@@ -834,7 +1094,7 @@ class ReviewTab(QWidget):
         self.btn_change_answer.setEnabled(False)  # Disable button during processing
 
         current_image = os.path.basename(self.image_paths[self.current_index])
-        question_num = self.question_spinbox.value()  # Get value from spinbox
+        question_num = self.selected_question  # Use selected question from grid
         new_answer = int(self.answer_combo.currentText())
         
         # Update the answer in the db
@@ -871,6 +1131,9 @@ class ReviewTab(QWidget):
             
             # Refresh the image list to maintain current state
             self.apply_filters()
+            
+            # Update question button appearance to reflect the change
+            self.update_question_button_appearance()
 
             # Show confirmation
             QMessageBox.information(
@@ -952,3 +1215,51 @@ class ReviewTab(QWidget):
         super().resizeEvent(event)
         if self.image_paths:
             self.show_current_image()
+    
+    def keyPressEvent(self, event):
+        """Handle keyboard shortcuts for better user experience"""
+        key = event.key()
+        
+        # Question navigation with arrow keys
+        if key == Qt.Key_Up or key == Qt.Key_Left:
+            if self.selected_question > 1:
+                self.select_question(self.selected_question - 1)
+        elif key == Qt.Key_Down or key == Qt.Key_Right:
+            if self.selected_question < 50:
+                self.select_question(self.selected_question + 1)
+        
+        # Quick answer selection with number keys
+        elif key == Qt.Key_1:
+            self.select_answer(1)
+        elif key == Qt.Key_2:
+            self.select_answer(2)
+        elif key == Qt.Key_3:
+            self.select_answer(3)
+        elif key == Qt.Key_4:
+            self.select_answer(4)
+        
+        # Apply answer change with Enter
+        elif key == Qt.Key_Return or key == Qt.Key_Enter:
+            if self.btn_change_answer.isEnabled():
+                self.change_detected_answer()
+        
+        # Image navigation
+        elif key == Qt.Key_PageUp:
+            self.show_previous_image()
+        elif key == Qt.Key_PageDown:
+            self.show_next_image()
+        
+        # Mark as reviewed with Space
+        elif key == Qt.Key_Space:
+            if self.btn_mark_reviewed.isEnabled():
+                self.mark_as_reviewed()
+        
+        # Question quick jump with Ctrl+number (1-9 for questions 1-9)
+        elif event.modifiers() == Qt.ControlModifier:
+            if Qt.Key_1 <= key <= Qt.Key_9:
+                question_num = key - Qt.Key_0  # Convert key to number
+                if 1 <= question_num <= 50:
+                    self.select_question(question_num)
+        
+        else:
+            super().keyPressEvent(event)

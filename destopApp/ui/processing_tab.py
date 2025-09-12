@@ -488,7 +488,7 @@ class ProcessingTab(QWidget):
                 enable_processing=False
             )
             self.progress_bar.setValue(0)
-            self.lbl_status.setText("Initializing batch processing...")
+            self.lbl_status.setText("Initializing processing...")
             QApplication.processEvents()  # Ensure UI updates
             
             # Setup worker thread using handler
