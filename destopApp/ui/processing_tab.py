@@ -125,25 +125,12 @@ class ProcessingTab(QWidget):
         self.layout.setContentsMargins(20, 20, 20, 20)
         self.layout.setSpacing(20)
 
-        # Project Selection Group
-        project_group = QGroupBox("Project Selection")
+        # Project Status Group
+        project_group = QGroupBox("Project Status")
         project_layout = QHBoxLayout()
         project_layout.setSpacing(15)
         
-        self.btn_select_project = QPushButton("Select Project")
-        self.btn_select_project.setStyleSheet("""
-            QPushButton {
-                background: linear-gradient(180deg, #28a745 0%, #1e7e34 100%);
-                border: 1px solid #1e7e34;
-                font-weight: 600;
-                min-width: 140px;
-            }
-            QPushButton:hover {
-                background: linear-gradient(180deg, #34d058 0%, #28a745 100%);
-            }
-        """)
-        
-        self.lbl_project = QLabel("No project selected")
+        self.lbl_project = QLabel("No project loaded")
         self.lbl_project.setStyleSheet("""
             QLabel {
                 background: #2a2a2a;
@@ -155,7 +142,6 @@ class ProcessingTab(QWidget):
             }
         """)
         
-        project_layout.addWidget(self.btn_select_project)
         project_layout.addWidget(self.lbl_project, 1)
         project_group.setLayout(project_layout)
 
@@ -238,7 +224,7 @@ class ProcessingTab(QWidget):
             }
         """)
         self.image_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.image_label.setText("📄 No images loaded\n\nSelect a project to begin processing")
+        self.image_label.setText("📄 No images loaded\n\nOpen a project from the Project tab to begin processing")
 
         # Processing Controls with batch options
         # Processing Controls with batch options
@@ -369,7 +355,6 @@ class ProcessingTab(QWidget):
 
     def setup_connections(self):
         """Connect all signals and slots"""
-        self.btn_select_project.clicked.connect(self.select_project)
         self.btn_prev.clicked.connect(self.show_previous_image)
         self.btn_next.clicked.connect(self.show_next_image)
         self.btn_process_all.clicked.connect(self.start_processing)
@@ -385,17 +370,6 @@ class ProcessingTab(QWidget):
             self.lbl_status.setText(f"Testing progress: {i}%")
             QApplication.processEvents()
             time.sleep(0.1)
-
-    def select_project(self):
-        """Let user select a project folder with validation"""
-        project_path = QFileDialog.getExistingDirectory(
-            self, 
-            "Select Project Folder",
-            "",
-            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks
-        )
-        if project_path:
-            self.load_project(project_path)
 
     def load_project(self, project_path):
         """Load project with optimized file handling"""

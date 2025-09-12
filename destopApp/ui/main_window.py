@@ -419,6 +419,7 @@ class MainWindow(QMainWindow):
         self.current_images = []
         self.linked_images = False
         self.processing_tab.load_project(project_path)
+        self.review_tab.load_project(project_path)
         self.update_ui_state()
         
         QMessageBox.information(
@@ -433,6 +434,7 @@ class MainWindow(QMainWindow):
         self.current_project = project_path
         self.current_images = []
         self.processing_tab.load_project(project_path)
+        self.review_tab.load_project(project_path)
         self.update_ui_state()
         self.status_bar.showMessage(f"Opened project: {os.path.basename(project_path)}")
 

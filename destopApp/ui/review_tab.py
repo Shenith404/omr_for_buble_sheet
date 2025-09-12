@@ -129,23 +129,10 @@ class ReviewTab(QWidget):
         left_layout.setContentsMargins(0, 0, 0, 0)
         left_layout.setSpacing(15)
         
-        # Project Selection Group
-        project_group = QGroupBox("Project Selection")
+        # Project Status Group
+        project_group = QGroupBox("Project Status")
         project_layout = QHBoxLayout()
         project_layout.setSpacing(15)
-        
-        self.btn_select_project = QPushButton("Open Project")
-        self.btn_select_project.setStyleSheet("""
-            QPushButton {
-                background: linear-gradient(180deg, #28a745 0%, #1e7e34 100%);
-                border: 1px solid #1e7e34;
-                font-weight: 600;
-                min-width: 140px;
-            }
-            QPushButton:hover {
-                background: linear-gradient(180deg, #34d058 0%, #28a745 100%);
-            }
-        """)
         
         self.lbl_project = QLabel("No project loaded")
         self.lbl_project.setStyleSheet("""
@@ -160,7 +147,6 @@ class ReviewTab(QWidget):
             }
         """)
         
-        project_layout.addWidget(self.btn_select_project)
         project_layout.addWidget(self.lbl_project, 1)
         project_group.setLayout(project_layout)
         
@@ -228,7 +214,7 @@ class ReviewTab(QWidget):
             }
         """)
         self.image_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.image_label.setText("📊 No results to review\n\nOpen a project to begin")
+        self.image_label.setText("📊 No results to review\n\nOpen a project from the Project tab to begin")
         
         # Results Info Group
         info_group = QGroupBox("Results Information")
@@ -514,23 +500,11 @@ class ReviewTab(QWidget):
 
     def setup_connections(self):
         """Connect all signals and slots"""
-        self.btn_select_project.clicked.connect(self.select_project)
         self.btn_prev.clicked.connect(self.show_previous_image)
         self.btn_next.clicked.connect(self.show_next_image)
         self.btn_mark_reviewed.clicked.connect(self.mark_as_reviewed)
         self.btn_change_answer.clicked.connect(self.change_detected_answer)
         self.btn_download_results.clicked.connect(self.download_results)
-
-    def select_project(self):
-        """Let user select a project folder"""
-        project_path = QFileDialog.getExistingDirectory(
-            self, 
-            "Select Project Folder",
-            "",
-            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks
-        )
-        if project_path:
-            self.load_project(project_path)
 
     def load_project(self, project_path):
         """Load processed images from project's results folder"""
