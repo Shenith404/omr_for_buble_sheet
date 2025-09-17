@@ -200,8 +200,8 @@ def showAnswers(img,answerIndexes,model_answers):
 
             # 1. Draw yellow cross for user answer
             if myAns != -1:
-                cv2.line(img, (cx , cy - 6), (cx + 12, cy + 6), (0, 255, 255), 2)  # Yellow line
-                cv2.line(img, (cx , cy + 6), (cx + 12, cy - 6), (0, 255, 255), 2)  # Yellow line
+                cv2.line(img, (cx , cy - 6), (cx + 12, cy + 6), (0, 180, 180), 2)  # Yellow line
+                cv2.line(img, (cx , cy + 6), (cx + 12, cy - 6), (0, 180, 180), 2)  # Yellow line
 
             # 2. Draw square above cross
             correct_cx = (correctAns * secW + 7 * x * secW) + secW // 2

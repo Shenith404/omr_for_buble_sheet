@@ -13,7 +13,7 @@ def get_model_path():
         base_path = sys._MEIPASS
     else:
         base_path = os.path.dirname(__file__)
-    return os.path.join(base_path, "models", "model_adpthresh_2.h5")
+    return os.path.join(base_path, "models","bubble_detection", "model_adpthresh_2.h5")
 
 model = load_model(get_model_path())
 
