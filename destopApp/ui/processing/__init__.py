@@ -17,5 +17,5 @@ __all__ = [
     'FileOperationHandler',
     'ModelAnswersHandler',
     'UIProcessingHandler',
-    'UIStateHandler'
+    'UIStateHandler',
 ]

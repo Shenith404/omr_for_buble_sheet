@@ -4,6 +4,7 @@ import numpy as np
 from PySide6.QtCore import Signal, QObject
 import utils
 import model
+from . import reg_detection
 
 
 class OMRProcessor(QObject):
@@ -55,8 +56,23 @@ class OMRProcessor(QObject):
                         raise ValueError(f"Failed to load image: {filename}")
                     
                     # Process image
-                    detected_answers, final_img = self.process_omr_sheet(image)
+                    detected_answers, final_img, new_filename = self.process_omr_sheet(image)
                     
+                    # Rename the image if a new filename is generated
+                    if new_filename is not None and new_filename != filename:
+                        try:
+                            new_image_path = os.path.join(os.path.dirname(image_path), new_filename)
+                            # Check if target file already exists
+                            if os.path.exists(new_image_path):
+                                print(f"Warning: Target file {new_filename} already exists. Skipping rename.")
+                            else:
+                                os.rename(image_path, new_image_path)
+                                filename = new_filename
+                                image_path = new_image_path
+                                print(f"File renamed from {os.path.basename(image_path)} to {new_filename}")
+                        except OSError as e:
+                            print(f"Error renaming file: {str(e)}")
+                            # Continue processing with original filename
                     # Emit progress after completion (not before)
                     processed_count += 1
                     progress = int((processed_count / total_images) * 100)
@@ -101,12 +117,52 @@ class OMRProcessor(QObject):
         rects = utils.rectContour(contours)
         
         if not rects:
-            return self.dummy_answer, img
+            return self.dummy_answer, img, None
+        
 
-        # Step 3: Perspective Transform with error checking
+        
+        #Step 3: detect registration number contour and rename the file accordingly
+        new_filename = None  # Initialize new_filename at the beginning
+        
+        if len(rects) > 1:  # Check if we have at least 2 rectangles before accessing rects[1]
+            reg_contour = utils.getCornerPoints(rects[1]) 
+            
+            if reg_contour.size != 0:
+                reg_contour = utils.reorder(reg_contour)
+                pts1r = np.float32(reg_contour)
+                pts2r = np.float32([[0, 0], [1000, 0], [0, 100], [1000, 100]])
+                matrix = cv2.getPerspectiveTransform(pts1r, pts2r)
+                warped_r = cv2.warpPerspective(img, matrix, (1000, 100))
+                
+                try:
+                    reg_number = reg_detection.detect_digits(warped_r)
+                    print("Reg Number Detection: ", reg_number)
+
+                    if reg_number["success"] and reg_number["total_detections"] > 0:
+                        # Rename the file as registration number
+                        reg_num_str = reg_number["digit_sequence"]
+                        if reg_num_str:  # Check if digit_sequence is not empty
+                            new_filename = f"EG_{reg_num_str}.png"
+                        else:
+                            print("Warning: Registration number detected but digit sequence is empty")
+                    else:
+                        print("Warning: Registration number detection failed or no digits detected")
+                except Exception as e:
+                    print(f"Error during registration number detection: {str(e)}")
+            else:
+                print("Warning: Registration contour not found or invalid")
+        else:
+            print("Warning: Insufficient rectangles detected for registration number processing")
+               
+
+
+
+
+        # Step 4: Perspective Transform with error checking
         biggest = utils.getCornerPoints(rects[0])
+
         if biggest.size == 0:
-            return self.dummy_answer, img
+            return self.dummy_answer, img, None
             
         biggest = utils.reorder(biggest)
         pts1 = np.float32(biggest)
@@ -114,7 +170,7 @@ class OMRProcessor(QObject):
         matrix = cv2.getPerspectiveTransform(pts1, pts2)
         warped = cv2.warpPerspective(img, matrix, (self.widthImg, self.heightImg))
 
-        # Step 4: Adaptive Thresholding for better robustness
+        # Step 5: Adaptive Thresholding for better robustness
         warped_gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
         #increase brightness
         #warped_gray =cv2.convertScaleAbs(warped_gray, alpha=1, beta=50)
@@ -181,7 +237,7 @@ class OMRProcessor(QObject):
         final_img = cv2.addWeighted(img, 1, inv_drawing, 1, 0)
         cv2.putText(final_img, f"Total Marks: {self.total_marks}/50", (50, 700), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 0, 250), 1)
 
-        return detected_answers, final_img
+        return detected_answers, final_img,new_filename
 
     def cancel(self):
         """Request cancellation of current processing"""

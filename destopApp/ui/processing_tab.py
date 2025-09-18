@@ -516,6 +516,8 @@ class ProcessingTab(QWidget):
 
             #disable mark all button when processing
             self.btn_process_all.setEnabled(False)
+            #enable cancel button when processing
+            self.btn_cancel.setEnabled(True)
 
             # Start processing
             self.worker_thread.start()

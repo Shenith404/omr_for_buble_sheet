@@ -1,10 +1,8 @@
 
-
-
-import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 from ultralytics import YOLO
+
+
 
 def detect_digits(image, model_path=r"F:\University\fyp\mcq_test_1\destopApp\models\reg_detection\best.pt", show_plots=True):
   
@@ -59,10 +57,13 @@ def detect_digits(image, model_path=r"F:\University\fyp\mcq_test_1\destopApp\mod
                     'y_center': y_center
                 })
         
-            # Validation 1: Check center point positions (y-coordinate should not be less than 200)
-            low_position_digits = [d for d in detected_digits if d['y_center'] < 200]
+            # Validation 1: Check center point positions (x-coordinate should not be less than 200)
+            low_position_digits = [d for d in detected_digits if d['x_center'] < 200]
             if low_position_digits:
                 result_data["success"]= False
+                result_data["validation_messages"].append(
+                    f"Some digits are detected too far left in the image (x < 200). Please ensure the image is properly aligned."
+                )
 
             # Sort detections by x-coordinate (left to right)
             detected_digits.sort(key=lambda x: x['x_center'])
@@ -71,6 +72,9 @@ def detect_digits(image, model_path=r"F:\University\fyp\mcq_test_1\destopApp\mod
             # Validation 2: Check if total digits equals 8
             if len(detected_digits) != 8:
                 result_data["success"]= False
+                result_data["validation_messages"].append(
+                    f"Expected 8 digits, but detected {len(detected_digits)}. Please ensure the registration number is fully visible."
+                )
 
             
             # Validation 3: Confidence assessment
