@@ -450,7 +450,7 @@ class ReviewUIBuilder:
             question_num = i + 1
             btn = QPushButton(str(question_num))
             btn.setFixedSize(22, 22)
-            btn.setCheckable(True)
+            btn.setCheckable(False)
             
             # Style for question buttons
             btn.setStyleSheet("""
