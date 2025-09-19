@@ -11,6 +11,7 @@ from PySide6.QtGui import QIcon
 from ui.project_tab import ProjectTab
 from ui.processing_tab import ProcessingTab
 from ui.review_tab import ReviewTab
+from ui.verify_tab import VerifyTab
 
 
 class MainWindow(QMainWindow):
@@ -28,6 +29,7 @@ class MainWindow(QMainWindow):
         self.project_tab = ProjectTab()
         self.processing_tab = ProcessingTab()
         self.review_tab = ReviewTab()
+        self.verify_tab = VerifyTab()
 
         # Setup UI
         self.setup_ui()
@@ -36,6 +38,7 @@ class MainWindow(QMainWindow):
         # Disable until project is active
         self.tab_widget.setTabEnabled(1, False)
         self.tab_widget.setTabEnabled(2, False)
+        self.tab_widget.setTabEnabled(3, False)
 
         self.update_ui_state()
 
@@ -60,6 +63,7 @@ class MainWindow(QMainWindow):
         self.tab_widget.addTab(self.project_tab, "Project")
         self.tab_widget.addTab(self.processing_tab, "Processing")
         self.tab_widget.addTab(self.review_tab, "Review")
+        self.tab_widget.addTab(self.verify_tab, "Verify")
 
         main_layout.addWidget(self.tab_widget)
 
@@ -346,6 +350,7 @@ class MainWindow(QMainWindow):
         if self.current_project:
             self.tab_widget.setTabEnabled(1, True)
             self.tab_widget.setTabEnabled(2, True)
+            self.tab_widget.setTabEnabled(3, True)
 
             msg = f"Project: {os.path.basename(self.current_project)}"
             if self.current_images:
@@ -354,7 +359,8 @@ class MainWindow(QMainWindow):
         else:
             self.tab_widget.setTabEnabled(1, False)
             self.tab_widget.setTabEnabled(2, False)
-            if self.tab_widget.currentIndex() in [1, 2]:
+            self.tab_widget.setTabEnabled(3, False)
+            if self.tab_widget.currentIndex() in [1, 2, 3]:
                 self.tab_widget.setCurrentIndex(0)
             self.status_label.setText("Ready to create or open a project")
 
@@ -381,13 +387,17 @@ class MainWindow(QMainWindow):
 
     def handle_tab_changed(self, index):
         """Force user back to Project tab if no project exists"""
-        if not self.current_project and index in [1, 2]:
+        if not self.current_project and index in [1, 2, 3]:
             QMessageBox.warning(self, "No Project", "Please create or open a project first.")
             self.tab_widget.setCurrentIndex(0)
         # If Review tab selected → reload everything from project folder
         if index == 2 and self.current_project:
             # Always reload the project state
             self.review_tab.load_project(self.current_project)
+        # If Verify tab selected → reload everything from project folder  
+        if index == 3 and self.current_project:
+            # Always reload the project state
+            self.verify_tab.load_project(self.current_project)
 
            
 
@@ -403,6 +413,7 @@ class MainWindow(QMainWindow):
             
             self.project_tab.load_project(project_path)
             self.review_tab.load_project(project_path)
+            self.verify_tab.load_project(project_path)
 
 
 
@@ -413,6 +424,7 @@ class MainWindow(QMainWindow):
         self.linked_images = False
         self.processing_tab.load_project(project_path)
         self.review_tab.load_project(project_path)
+        self.verify_tab.load_project(project_path)
         self.update_ui_state()
         
         QMessageBox.information(
@@ -428,6 +440,7 @@ class MainWindow(QMainWindow):
         self.current_images = []
         self.processing_tab.load_project(project_path)
         self.review_tab.load_project(project_path)
+        self.verify_tab.load_project(project_path)
         self.update_ui_state()
         self.status_bar.showMessage(f"Opened project: {os.path.basename(project_path)}")
 
@@ -445,6 +458,7 @@ class MainWindow(QMainWindow):
         self.processing_tab.load_project(self.current_project)
         self.processing_tab.set_image_paths(image_paths.copy())
         self.review_tab.load_images(image_paths)
+        self.verify_tab.load_images(image_paths)
         
         self.update_ui_state()
 
@@ -453,6 +467,7 @@ class MainWindow(QMainWindow):
         # Disable tabs during processing
         self.tab_widget.setTabEnabled(0, False)
         self.tab_widget.setTabEnabled(2, False)
+        self.tab_widget.setTabEnabled(3, False)
         self.status_bar.showMessage("Processing started...")
 
 
@@ -460,6 +475,7 @@ class MainWindow(QMainWindow):
         # Enable tabs after processing
         self.tab_widget.setTabEnabled(0, True)
         self.tab_widget.setTabEnabled(2, True)
+        self.tab_widget.setTabEnabled(3, True)
         
         self.status_bar.showMessage("Processing finished")
 

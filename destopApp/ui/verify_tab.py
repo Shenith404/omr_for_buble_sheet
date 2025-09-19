@@ -15,15 +15,15 @@ import cv2
 import shutil
 
 # Import the extracted modules
-from .review_handlers import (
-    ReviewUIBuilder,
-    ReviewImageHandler,
-    ReviewFileHandler,
-    ReviewOMRHandler
+from .verify_handlers import (
+    VerifyUIBuilder,
+    VerifyImageHandler,
+    VerifyFileHandler,
+    VerifyOMRHandler
 )
 
-class ReviewTab(QWidget):
-    """Enhanced Review Tab with project loading and 70-30 split layout"""
+class VerifyTab(QWidget):
+    """Enhanced Verify Tab with project loading and 70-30 split layout"""
     
     # Signals
     project_loaded = Signal(str)
@@ -49,7 +49,8 @@ class ReviewTab(QWidget):
         
     def setup_ui(self):
         """Initialize UI with 70-30 horizontal split layout"""
-        self.setStyleSheet(ReviewUIBuilder.get_main_stylesheet())
+        # Apply professional dark theme
+        self.setStyleSheet(VerifyUIBuilder.get_main_stylesheet())
 
         main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(20, 20, 20, 20)
@@ -62,7 +63,7 @@ class ReviewTab(QWidget):
         left_layout.setSpacing(15)
         
         # Project Status Group
-        project_group, self.lbl_project = ReviewUIBuilder.create_project_status_group()
+        project_group, self.lbl_project = VerifyUIBuilder.create_project_status_group()
         
         # Image Navigation Group
         nav_group = QGroupBox("Image Navigation")
@@ -74,7 +75,7 @@ class ReviewTab(QWidget):
         search_layout.setSpacing(10)
         
         # Search input and filter combo
-        self.search_input, self.filter_combo = ReviewUIBuilder.create_search_and_filter_widgets()
+        self.search_input, self.filter_combo = VerifyUIBuilder.create_search_and_filter_widgets()
         search_layout.addWidget(self.search_input, 2)
         search_layout.addWidget(self.filter_combo, 1)
         
@@ -82,7 +83,7 @@ class ReviewTab(QWidget):
         nav_buttons_layout = QHBoxLayout()
         nav_buttons_layout.setSpacing(15)
         
-        self.btn_prev, self.btn_next, self.lbl_image_info = ReviewUIBuilder.create_navigation_buttons()
+        self.btn_prev, self.btn_next, self.lbl_image_info = VerifyUIBuilder.create_navigation_buttons()
         nav_buttons_layout.addWidget(self.btn_prev)
         nav_buttons_layout.addWidget(self.lbl_image_info)
         nav_buttons_layout.addWidget(self.btn_next)
@@ -92,10 +93,10 @@ class ReviewTab(QWidget):
         nav_group.setLayout(nav_layout)
         
         # Image Display
-        self.image_label = ReviewUIBuilder.create_image_display_label()
+        self.image_label = VerifyUIBuilder.create_image_display_label()
         
         # Results Info Group
-        info_group, self.lbl_results_info = ReviewUIBuilder.create_results_info_group()
+        info_group, self.lbl_results_info = VerifyUIBuilder.create_results_info_group()
         
         # Assemble left panel (70%)
         left_layout.addWidget(project_group)
@@ -116,7 +117,7 @@ class ReviewTab(QWidget):
         right_layout.setSpacing(20)
         
         # Download Results Button (added at top of right panel)
-        self.btn_download_results = ReviewUIBuilder.create_download_results_button()
+        self.btn_download_results = VerifyUIBuilder.create_download_results_button()
         right_layout.addWidget(self.btn_download_results)
         
         # Image List Group
@@ -124,7 +125,7 @@ class ReviewTab(QWidget):
         images_layout = QVBoxLayout(images_group)
         images_layout.setSpacing(10)
         
-        self.images_list = ReviewUIBuilder.create_images_list_widget()
+        self.images_list = VerifyUIBuilder.create_images_list_widget()
         images_layout.addWidget(self.images_list)
         right_layout.addWidget(images_group)
         
@@ -136,7 +137,7 @@ class ReviewTab(QWidget):
         
         # Create rename widgets
         (self.current_filename_label, self.filename_input, 
-         self.file_extension_label, self.btn_rename_file) = ReviewUIBuilder.create_file_rename_widgets()
+         self.file_extension_label, self.btn_rename_file) = VerifyUIBuilder.create_file_rename_widgets()
         
         # New filename input layout
         rename_input_layout = QHBoxLayout()
@@ -163,7 +164,7 @@ class ReviewTab(QWidget):
         self.question_buttons = []
         
         # Question Grid Container with Scroll
-        scroll_area = ReviewUIBuilder.create_question_grid(self.question_buttons)
+        scroll_area = VerifyUIBuilder.create_question_grid(self.question_buttons)
         question_layout.addWidget(scroll_area)
         
         # Set first question as selected by default
@@ -171,7 +172,7 @@ class ReviewTab(QWidget):
             self.question_buttons[0].setChecked(True)
         
         # Selected Question Info
-        self.selected_question_label = ReviewUIBuilder.create_selected_question_label()
+        self.selected_question_label = VerifyUIBuilder.create_selected_question_label()
         question_layout.addWidget(self.selected_question_label)
         
         # Answer Section (Enhanced)
@@ -182,7 +183,7 @@ class ReviewTab(QWidget):
         answer_buttons_layout = QHBoxLayout()
         answer_buttons_layout.setSpacing(6)
         
-        self.answer_buttons = ReviewUIBuilder.create_answer_buttons()
+        self.answer_buttons = VerifyUIBuilder.create_answer_buttons()
         for i, btn in enumerate(self.answer_buttons):
             btn.clicked.connect(lambda checked, ans=i+1: self.select_answer(ans))
             answer_buttons_layout.addWidget(btn)
@@ -196,8 +197,8 @@ class ReviewTab(QWidget):
         self.answer_combo.addItems([str(i) for i in range(1, 5)])
         self.answer_combo.hide()  # Hide the old combo box
         
-        # Change Answer and Mark as Reviewed buttons
-        self.btn_change_answer, self.btn_mark_reviewed = ReviewUIBuilder.create_action_buttons()
+        # Change Answer and Verified by Second Examiner buttons
+        self.btn_change_answer, self.btn_mark_reviewed = VerifyUIBuilder.create_action_buttons()
         
         question_layout.addWidget(answer_label)
         question_layout.addLayout(answer_buttons_layout)
@@ -207,7 +208,7 @@ class ReviewTab(QWidget):
         right_layout.addWidget(question_group)
         right_layout.addStretch(1)  # Add flexible space
         
-        # Mark as Reviewed button at bottom
+        # Verified by Second Examiner button at bottom
         right_layout.addWidget(self.btn_mark_reviewed)
         
         # Add panels to main layout
@@ -219,7 +220,7 @@ class ReviewTab(QWidget):
             btn.clicked.connect(lambda checked, q=i+1: self.select_question(q))
         
         self.update_navigation_buttons()
-        self.update_review_button_state()
+        self.update_verify_button_state()
         
         # Enable focus for keyboard shortcuts
         self.setFocusPolicy(Qt.StrongFocus)
@@ -229,7 +230,7 @@ class ReviewTab(QWidget):
         """Connect all signals and slots"""
         self.btn_prev.clicked.connect(self.show_previous_image)
         self.btn_next.clicked.connect(self.show_next_image)
-        self.btn_mark_reviewed.clicked.connect(self.mark_as_reviewed)
+        self.btn_mark_reviewed.clicked.connect(self.mark_as_verified)
         self.btn_change_answer.clicked.connect(self.change_detected_answer)
         self.btn_download_results.clicked.connect(self.download_results)
         
@@ -247,7 +248,7 @@ class ReviewTab(QWidget):
         self.selected_question = question_num
         
         # Update question selection using handler
-        ReviewOMRHandler.update_question_selection(
+        VerifyOMRHandler.update_question_selection(
             self.question_buttons, self.selected_question_label, question_num
         )
         
@@ -257,7 +258,7 @@ class ReviewTab(QWidget):
     def select_answer(self, answer_num):
         """Handle answer selection from buttons"""
         # Update answer selection using handler
-        ReviewOMRHandler.update_answer_selection(
+        VerifyOMRHandler.update_answer_selection(
             self.answer_buttons, self.answer_combo, answer_num
         )
     
@@ -269,12 +270,12 @@ class ReviewTab(QWidget):
         current_image = os.path.basename(self.image_paths[self.current_index])
         
         # Update question button appearances using handler
-        ReviewOMRHandler.update_question_button_appearance(
+        VerifyOMRHandler.update_question_button_appearance(
             self.question_buttons, self.handler, current_image
         )
 
     def apply_filters(self):
-        """Apply search and review status filters to image list"""
+        """Apply search and verification status filters to image list - shows only reviewed images"""
         if not self.image_paths:
             self.filtered_image_paths = []
             self.update_image_list()
@@ -283,16 +284,18 @@ class ReviewTab(QWidget):
         search_text = self.search_input.text()
         filter_type = self.filter_combo.currentText()
         
-        # Start with all images
-        filtered_paths = self.image_paths.copy()
+        # Start with all images but filter to only reviewed images first
+        reviewed_only_paths = [path for path in self.image_paths if self.is_image_reviewed(os.path.basename(path))]
         
-        # Apply search filter
-        filtered_paths = ReviewImageHandler.apply_search_filter(filtered_paths, search_text)
+        # Apply search filter on reviewed images only
+        filtered_paths = VerifyImageHandler.apply_search_filter(reviewed_only_paths, search_text)
         
-        # Apply review status filter
-        filtered_paths = ReviewImageHandler.apply_review_status_filter(
-            filtered_paths, filter_type, self.is_image_reviewed
-        )
+        # Apply verification status filter
+        if filter_type == "Verified Images":
+            filtered_paths = [path for path in filtered_paths if self.is_image_verified(os.path.basename(path))]
+        elif filter_type == "Unverified Images":
+            filtered_paths = [path for path in filtered_paths if not self.is_image_verified(os.path.basename(path))]
+        # "Reviewed Images" shows all reviewed images (default behavior)
         
         self.filtered_image_paths = filtered_paths
         self.update_image_list()
@@ -305,25 +308,33 @@ class ReviewTab(QWidget):
                 if self.filtered_image_paths:
                     self.current_index = self.image_paths.index(self.filtered_image_paths[0])
                     self.show_current_image()
+                else:
+                    # No reviewed images available
+                    self.current_index = 0
+                    VerifyImageHandler.show_no_images_message(self.image_label, "no_reviewed_images")
     
     def is_image_reviewed(self, filename):
         """Check if image is reviewed using database"""
-        return ReviewOMRHandler.is_image_reviewed(self.handler, filename, self.reviewed_images)
+        return VerifyOMRHandler.is_image_reviewed(self.handler, filename, self.reviewed_images)
+    
+    def is_image_verified(self, filename):
+        """Check if image is verified by second examiner using database"""
+        return VerifyOMRHandler.is_image_verified(self.handler, filename, self.reviewed_images)
     
     def update_image_list(self):
-        """Update the image list widget with filtered results"""
-        ReviewImageHandler.update_image_list_widget(
-            self.images_list, self.filtered_image_paths, self.is_image_reviewed
+        """Update the image list widget with filtered results showing verification status"""
+        VerifyImageHandler.update_image_list_widget(
+            self.images_list, self.filtered_image_paths, self.is_image_reviewed, self.is_image_verified
         )
         
         # Update image count info
-        ReviewImageHandler.update_image_count_info(
+        VerifyImageHandler.update_image_count_info(
             self.lbl_image_info, self.image_paths, self.filtered_image_paths, self.current_index
         )
     
     def on_image_selected(self, item):
         """Handle image selection from the list"""
-        new_index = ReviewImageHandler.get_image_index_from_list_item(item, self.image_paths)
+        new_index = VerifyImageHandler.get_image_index_from_list_item(item, self.image_paths)
         if new_index >= 0:
             self.current_index = new_index
             self.show_current_image()
@@ -331,23 +342,26 @@ class ReviewTab(QWidget):
             self.update_image_list()  # Update to highlight current selection
 
     def load_project(self, project_path):
-        """Load processed images from project's results folder"""
+        """Load processed images from project's results folder - only show reviewed images"""
         self.project_path = project_path
-        self.lbl_project.setText(f"Reviewing: {os.path.basename(project_path)}")
+        self.lbl_project.setText(f"Verifying: {os.path.basename(project_path)}")
         self.image_paths = []
         self.filtered_image_paths = []
         self.answers = {}
         self.reviewed_images = set()
         
         # Load processed images from results folder
-        self.image_paths = ReviewImageHandler.load_project_images(project_path)
+        all_image_paths = VerifyImageHandler.load_project_images(project_path)
 
-        # Load db
+        # Load db first to check review status
         self.handler = db.OMRJsonHandler(project_path)
         # Load model answers
-        self.model_answers = ReviewOMRHandler.load_model_answers(self.handler)
+        self.model_answers = VerifyOMRHandler.load_model_answers(self.handler)
         
-        # Initialize filtered paths and apply current filters
+        # Filter to only reviewed images
+        self.image_paths = [path for path in all_image_paths if self.is_image_reviewed(os.path.basename(path))]
+        
+        # Initialize filtered paths with only reviewed images
         self.filtered_image_paths = self.image_paths.copy()
         self.apply_filters()
         
@@ -355,18 +369,18 @@ class ReviewTab(QWidget):
             self.current_index = 0
             self.show_current_image()
         else:
-            self.lbl_image_info.setText("No processed images found")
-            ReviewImageHandler.show_no_images_message(self.image_label, "no_results")
+            self.lbl_image_info.setText("No reviewed images found for verification")
+            VerifyImageHandler.show_no_images_message(self.image_label, "no_reviewed_images")
         
         self.update_navigation_buttons()
-        self.update_review_button_state()
+        self.update_verify_button_state()
         self.project_loaded.emit(project_path)
 
     def load_images(self, image_paths):
         """
-        Prepare the review tab with original image paths.
+        Prepare the verify tab with original image paths.
         This method is called when images are added to the project but before processing.
-        The review tab will show a message that processing is needed first.
+        The verify tab will show a message that processing is needed first.
         """
         # Store the original image paths for reference
         self.original_image_paths = image_paths.copy() if image_paths else []
@@ -384,36 +398,61 @@ class ReviewTab(QWidget):
         # Show message that processing is needed
         if self.original_image_paths:
             self.lbl_image_info.setText(f"{len(self.original_image_paths)} images added - Processing required")
-            ReviewImageHandler.show_no_images_message(self.image_label, "processing_required")
+            VerifyImageHandler.show_no_images_message(self.image_label, "processing_required")
         else:
             self.lbl_image_info.setText("No images loaded")
-            ReviewImageHandler.show_no_images_message(self.image_label, "no_images")
+            VerifyImageHandler.show_no_images_message(self.image_label, "no_images")
         
         # Disable navigation since there are no processed images yet
         self.update_navigation_buttons()
-        self.update_review_button_state()
+        self.update_verify_button_state()
 
     def show_current_image(self):
-        """Display the current processed image with results"""
+        """Display the current processed image with results - only shows reviewed images"""
         if not self.image_paths:
+            VerifyImageHandler.show_no_images_message(self.image_label, "no_images")
+            return
+        
+        # Ensure we only show reviewed images
+        if not self.filtered_image_paths:
+            VerifyImageHandler.show_no_images_message(self.image_label, "no_reviewed_images")
+            return
+            
+        # Get current image from filtered (reviewed) images
+        if self.current_index >= len(self.image_paths):
             return
             
         image_path = self.image_paths[self.current_index]
         filename = os.path.basename(image_path)
         
+        # Double-check that this image is reviewed
+        if not self.is_image_reviewed(filename):
+            # If current image is not reviewed, find the first reviewed image
+            for i, path in enumerate(self.image_paths):
+                if self.is_image_reviewed(os.path.basename(path)):
+                    self.current_index = i
+                    image_path = path
+                    filename = os.path.basename(path)
+                    break
+            else:
+                # No reviewed images found
+                VerifyImageHandler.show_no_images_message(self.image_label, "no_reviewed_images")
+                self.lbl_image_info.setText("No reviewed images available for verification")
+                return
+        
         try:
             # Load and display image
-            success = ReviewImageHandler.display_current_image(image_path, self.image_label)
+            success = VerifyImageHandler.display_current_image(image_path, self.image_label)
             
             if success:
                 # Update image info with filtered count
                 self.update_image_list()
                 
                 # Highlight current image in the list
-                ReviewImageHandler.highlight_current_image_in_list(self.images_list, image_path)
+                VerifyImageHandler.highlight_current_image_in_list(self.images_list, image_path)
                 
-                # Update review button state
-                self.update_review_button_state()
+                # Update verify button state
+                self.update_verify_button_state()
                 
                 # Update question button appearances for this image
                 self.update_question_button_appearance()
@@ -422,51 +461,83 @@ class ReviewTab(QWidget):
                 self.update_filename_display()
                 
         except Exception as e:
-            ReviewImageHandler.show_image_loading_error(self.image_label, str(e))
+            VerifyImageHandler.show_image_loading_error(self.image_label, str(e))
             self.lbl_results_info.setText("")
 
     def show_next_image(self):
-        """Navigate to the next image"""
-        if ReviewImageHandler.validate_image_navigation(self.current_index, len(self.image_paths), "next"):
-            self.current_index += 1
-            self.show_current_image()
+        """Navigate to the next reviewed image"""
+        if not self.filtered_image_paths:
+            return
+            
+        # Find current image in filtered list
+        if self.current_index < len(self.image_paths):
+            current_path = self.image_paths[self.current_index]
+            if current_path in self.filtered_image_paths:
+                current_filtered_index = self.filtered_image_paths.index(current_path)
+                if current_filtered_index < len(self.filtered_image_paths) - 1:
+                    next_path = self.filtered_image_paths[current_filtered_index + 1]
+                    self.current_index = self.image_paths.index(next_path)
+                    self.show_current_image()
         self.update_navigation_buttons()
 
     def show_previous_image(self):
-        """Navigate to the previous image"""
-        if ReviewImageHandler.validate_image_navigation(self.current_index, len(self.image_paths), "prev"):
-            self.current_index -= 1
-            self.show_current_image()
+        """Navigate to the previous reviewed image"""
+        if not self.filtered_image_paths:
+            return
+            
+        # Find current image in filtered list
+        if self.current_index < len(self.image_paths):
+            current_path = self.image_paths[self.current_index]
+            if current_path in self.filtered_image_paths:
+                current_filtered_index = self.filtered_image_paths.index(current_path)
+                if current_filtered_index > 0:
+                    prev_path = self.filtered_image_paths[current_filtered_index - 1]
+                    self.current_index = self.image_paths.index(prev_path)
+                    self.show_current_image()
         self.update_navigation_buttons()
 
     def update_navigation_buttons(self):
-        """Update button states based on current position"""
-        ReviewImageHandler.update_navigation_button_states(
-            self.btn_prev, self.btn_next, self.current_index, len(self.image_paths)
-        )
-        self.btn_change_answer.setEnabled(len(self.image_paths) > 0)
-        self.btn_download_results.setEnabled(len(self.image_paths) > 0)
+        """Update button states based on current position in filtered reviewed images"""
+        if not self.filtered_image_paths:
+            self.btn_prev.setEnabled(False)
+            self.btn_next.setEnabled(False)
+            self.btn_change_answer.setEnabled(False)
+            self.btn_download_results.setEnabled(False)
+            return
+            
+        # Find current position in filtered list
+        current_filtered_index = -1
+        if self.current_index < len(self.image_paths):
+            current_path = self.image_paths[self.current_index]
+            if current_path in self.filtered_image_paths:
+                current_filtered_index = self.filtered_image_paths.index(current_path)
+        
+        # Update button states based on filtered list
+        self.btn_prev.setEnabled(current_filtered_index > 0)
+        self.btn_next.setEnabled(current_filtered_index >= 0 and current_filtered_index < len(self.filtered_image_paths) - 1)
+        self.btn_change_answer.setEnabled(len(self.filtered_image_paths) > 0)
+        self.btn_download_results.setEnabled(len(self.filtered_image_paths) > 0)
 
-    def update_review_button_state(self):
-        """Update the Mark as Reviewed button state"""
+    def update_verify_button_state(self):
+        """Update the Verified by Second Examiner button state"""
         if not self.image_paths:
             self.btn_mark_reviewed.setEnabled(False)
             return
             
         current_image = os.path.basename(self.image_paths[self.current_index])
-        ReviewOMRHandler.update_review_button_state(
+        VerifyOMRHandler.update_verify_button_state(
             self.btn_mark_reviewed, self.handler, current_image, self.reviewed_images
         )
 
-    def mark_as_reviewed(self):
-        """Mark current image as reviewed"""
+    def mark_as_verified(self):
+        """Mark current image as verified by second examiner"""
         if not self.image_paths:
             return
             
         current_image = os.path.basename(self.image_paths[self.current_index])
         
         try:
-            updated_image_path = ReviewOMRHandler.mark_as_reviewed(
+            updated_image_path = VerifyOMRHandler.mark_as_verified(
                 self.handler, self.project_path, current_image, self.reviewed_images
             )
             
@@ -474,14 +545,14 @@ class ReviewTab(QWidget):
             self.image_paths[self.current_index] = updated_image_path
             self.show_current_image()
             
-            # Update review button state and refresh filters
-            self.update_review_button_state()
+            # Update verify button state and refresh filters
+            self.update_verify_button_state()
             self.apply_filters()  # Refresh the filtered list to reflect new status
             
         except Exception as e:
-            print("Error marking as reviewed:", e)
+            print("Error marking as verified:", e)
             QMessageBox.critical(
-                self, "Error", f"Failed to mark as reviewed: {str(e)}", QMessageBox.Ok
+                self, "Error", f"Failed to mark as verified: {str(e)}", QMessageBox.Ok
             )
 
     def change_detected_answer(self):
@@ -498,13 +569,13 @@ class ReviewTab(QWidget):
         
         try:
             # Validate input
-            is_valid, error_msg = ReviewOMRHandler.validate_question_answer_input(question_num, new_answer)
+            is_valid, error_msg = VerifyOMRHandler.validate_question_answer_input(question_num, new_answer)
             if not is_valid:
                 QMessageBox.warning(self, "Invalid Input", error_msg)
                 return
             
             # Update the answer using handler
-            result_image_path = ReviewOMRHandler.change_detected_answer(
+            result_image_path = VerifyOMRHandler.change_detected_answer(
                 self.handler, self.project_path, current_image, 
                 question_num, new_answer, self.model_answers
             )
@@ -550,7 +621,7 @@ class ReviewTab(QWidget):
             return
         
         # Validate filename
-        is_valid, error_msg = ReviewFileHandler.validate_filename(new_name)
+        is_valid, error_msg = VerifyFileHandler.validate_filename(new_name)
         if not is_valid:
             QMessageBox.warning(self, "Invalid Name", error_msg)
             return
@@ -563,19 +634,19 @@ class ReviewTab(QWidget):
             self.btn_rename_file.setEnabled(False)
             
             # Rename files using handler
-            new_filename_with_ext, renamed_paths = ReviewFileHandler.rename_image_file(
+            new_filename_with_ext, renamed_paths = VerifyFileHandler.rename_image_file(
                 self.project_path, current_filename, new_name
             )
             
             # Update database entry if handler is available
-            ReviewFileHandler.update_database_filename(self.handler, current_filename, new_filename_with_ext)
+            VerifyFileHandler.update_database_filename(self.handler, current_filename, new_filename_with_ext)
             
             # Update the current image paths
             new_path = os.path.join(self.project_path, "results", new_filename_with_ext)
             self.image_paths[self.current_index] = new_path
             
             # Update original image paths if they exist
-            self.original_image_paths = ReviewFileHandler.update_image_paths_after_rename(
+            self.original_image_paths = VerifyFileHandler.update_image_paths_after_rename(
                 self.original_image_paths, current_filename, new_filename_with_ext
             )
             
@@ -621,13 +692,13 @@ class ReviewTab(QWidget):
         
         try:
             # Download results using handler
-            dest_dir = ReviewFileHandler.download_project_results(self.project_path)
+            dest_dir = VerifyFileHandler.download_project_results(self.project_path)
             
             if dest_dir:  # User didn't cancel
                 # Create Excel sheet
                 p_title = self.project_path.split(os.sep)[-1]
                 excel_path = os.path.join(dest_dir, p_title + "_result.xlsx")
-                ReviewFileHandler.export_results_to_excel(self.handler, excel_path)
+                VerifyFileHandler.export_results_to_excel(self.handler, excel_path)
 
                 QMessageBox.information(
                     self,
@@ -682,10 +753,10 @@ class ReviewTab(QWidget):
         elif key == Qt.Key_PageDown:
             self.show_next_image()
         
-        # Mark as reviewed with Space
+        # Mark as verified with Space
         elif key == Qt.Key_Space:
             if self.btn_mark_reviewed.isEnabled():
-                self.mark_as_reviewed()
+                self.mark_as_verified()
         
         # Question quick jump with Ctrl+number (1-9 for questions 1-9)
         elif event.modifiers() == Qt.ControlModifier:

@@ -130,7 +130,7 @@ def getAnswerBlocks(img):
 #             return f"answer {i+1} is not valid, it should be between 0 and 4"
     
 #     return True
-def draw_stamp(image, input_name="First Examiner", position=(50, 50), color=(0, 0, 255)):
+def draw_stamp(image, input_name="First Examiner", position=(25, 25), color=(0, 0, 255)):
     """Draw a smaller, less-rotated review stamp on the image"""
     # Convert grayscale image to BGR if needed
     if len(image.shape) == 2:
@@ -266,3 +266,5 @@ def process_omr_sheet_without_model( image, detected_answers, model_answers):
     cv2.putText(final_img, f"Total Marks: {total_marks}/50", (50, 700), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 0, 250), 1)
 
     return  final_img
+
+

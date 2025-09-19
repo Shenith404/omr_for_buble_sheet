@@ -52,6 +52,7 @@ class OMRJsonHandler:
             "detected": detected_answers,
             "total_marks": total_marks,
             "reviewed": False,
+            "verified": False,
             "last_modified": datetime.now().isoformat()
         }
 
@@ -92,6 +93,7 @@ class OMRJsonHandler:
         
         sheet["detected"][question_num] = new_answer
         sheet["reviewed"] = False
+        sheet["verified"] = False
         sheet["last_modified"] = datetime.now().isoformat()
         
         # Recalculate marks if needed
@@ -172,11 +174,26 @@ class OMRJsonHandler:
             return True
         return False
     
+    def mark_for_verification(self, filename, status=True):
+        """Flag/unflag a sheet as verified by second examiner"""
+        data = self._load_data()
+        if filename in data["data"]:
+            data["data"][filename]["verified"] = status
+            self._save_data(data)
+            return True
+        return False
+    
     #get reviewed sheet names
     def get_reviewed_sheet_names(self):
         """Get names of all reviewed sheets"""
         data = self._load_data()
         return [k for k, v in data["data"].items() if v.get("reviewed", True)]
+    
+    #get verified sheet names
+    def get_verified_sheet_names(self):
+        """Get names of all verified sheets"""
+        data = self._load_data()
+        return [k for k, v in data["data"].items() if v.get("verified", True)]
     
 
     #save answers in excel sheet
@@ -197,7 +214,7 @@ class OMRJsonHandler:
         center_alignment = Alignment(horizontal="center")
 
         # --- Header Row ---
-        headers = ["Filename", "Reviewed", "Total Marks", "Last Modified", "Detected Answers"]
+        headers = ["Filename", "Reviewed", "Verified", "Total Marks", "Last Modified", "Detected Answers"]
         for col_num, header in enumerate(headers, start=1):
             cell = ws.cell(row=1, column=col_num, value=header)
             cell.fill = header_fill
@@ -208,10 +225,11 @@ class OMRJsonHandler:
         for row_num, (filename, details) in enumerate(all_sheets.items(), start=2):
             ws.cell(row=row_num, column=1, value=filename)
             ws.cell(row=row_num, column=2, value=str(details.get("reviewed", False)))
-            ws.cell(row=row_num, column=3, value=details.get("total_marks", 0))
-            ws.cell(row=row_num, column=4, value=details.get("last_modified", ""))
+            ws.cell(row=row_num, column=3, value=str(details.get("verified", False)))
+            ws.cell(row=row_num, column=4, value=details.get("total_marks", 0))
+            ws.cell(row=row_num, column=5, value=details.get("last_modified", ""))
             detected = details.get("detected", {})
-            ws.cell(row=row_num, column=5, value=str(detected))
+            ws.cell(row=row_num, column=6, value=str(detected))
 
             # Apply conditional row coloring
             fill = reviewed_fill if details.get("reviewed") else unreviewed_fill

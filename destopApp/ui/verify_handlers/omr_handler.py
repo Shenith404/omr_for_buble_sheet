@@ -1,6 +1,6 @@
 """
-OMR Processing Handlers for Review Tab
-Handles OMR-specific operations like answer changing, review marking, and question management
+OMR Processing Handlers for Verify Tab
+Handles OMR-specific operations like answer changing, verification marking, and question management
 """
 
 import os
@@ -9,8 +9,8 @@ from PySide6.QtWidgets import QMessageBox
 import utils
 
 
-class ReviewOMRHandler:
-    """Handles OMR-specific operations for the Review Tab"""
+class VerifyOMRHandler:
+    """Handles OMR-specific operations for the Verify Tab"""
     
     @staticmethod
     def update_question_button_appearance(question_buttons, handler, current_image_filename):
@@ -92,12 +92,12 @@ class ReviewOMRHandler:
                             btn.setText(f"{q_num}\n{answer_letter}")
                     else:
                         # Reset to default style
-                        ReviewOMRHandler.reset_question_button_style(btn, q_num)
+                        VerifyOMRHandler.reset_question_button_style(btn, q_num)
         except Exception as e:
             print(f"Error updating question buttons: {e}")
             # Reset all buttons to default on error
             for i, btn in enumerate(question_buttons):
-                ReviewOMRHandler.reset_question_button_style(btn, i + 1)
+                VerifyOMRHandler.reset_question_button_style(btn, i + 1)
 
     @staticmethod
     def reset_question_button_style(btn, question_num):
@@ -196,8 +196,8 @@ class ReviewOMRHandler:
             raise Exception(f"Failed to update answer: {str(e)}")
 
     @staticmethod
-    def mark_as_reviewed(handler, project_path, current_image_filename, reviewed_images_set):
-        """Mark current image as reviewed"""
+    def mark_as_verified(handler, project_path, current_image_filename, reviewed_images_set):
+        """Mark current image as verified by second examiner"""
         if not current_image_filename:
             raise ValueError("No image filename provided")
         
@@ -209,18 +209,18 @@ class ReviewOMRHandler:
         
         img = cv2.imread(image_path)
         try:
-            # Draw the review stamp
-            reviewed_img = utils.draw_stamp(img, input_name="First Examiner", position=(25, 50), color=(0, 0, 255))
-            cv2.imwrite(image_path, reviewed_img)
+            # Draw the verification stamp (different from review stamp)
+            verified_img = utils.draw_stamp(img, input_name="Second Examiner", position=(150, 50), color=(0, 255, 0))  # Green stamp
+            cv2.imwrite(image_path, verified_img)
 
-            # Update database
+            # Update database to mark as verified
             if handler:
-                handler.mark_for_review(current_image_filename, True)
+                handler.mark_for_verification(current_image_filename, True)
             
             return image_path
             
         except Exception as e:
-            raise Exception(f"Error drawing review stamp: {str(e)}")
+            raise Exception(f"Error drawing verification stamp: {str(e)}")
 
     @staticmethod
     def is_image_reviewed(handler, filename, reviewed_images_set):
@@ -232,6 +232,17 @@ class ReviewOMRHandler:
         if sheet_data:
             return sheet_data.get("reviewed", False)
         return filename in reviewed_images_set
+
+    @staticmethod
+    def is_image_verified(handler, filename, verified_images_set):
+        """Check if image is verified by second examiner"""
+        if not handler:
+            return filename in verified_images_set
+        
+        sheet_data = handler.get_sheet(filename)
+        if sheet_data:
+            return sheet_data.get("verified", False)
+        return filename in verified_images_set
 
     @staticmethod
     def get_current_answer_for_question(handler, current_image_filename, question_num):
@@ -276,17 +287,17 @@ class ReviewOMRHandler:
         return 0
 
     @staticmethod
-    def update_review_button_state(btn_mark_reviewed, handler, current_image_filename, reviewed_images_set):
-        """Update the Mark as Reviewed button state"""
+    def update_verify_button_state(btn_mark_verified, handler, current_image_filename, verified_images_set):
+        """Update the Verified by Second Examiner button state"""
         if not current_image_filename:
-            btn_mark_reviewed.setEnabled(False)
+            btn_mark_verified.setEnabled(False)
             return
             
-        is_reviewed = ReviewOMRHandler.is_image_reviewed(handler, current_image_filename, reviewed_images_set)
+        is_verified = VerifyOMRHandler.is_image_verified(handler, current_image_filename, verified_images_set)
         
-        btn_mark_reviewed.setEnabled(not is_reviewed)
-        btn_mark_reviewed.setText(
-            "✓ Reviewed" if is_reviewed else "✓ Mark as Reviewed"
+        btn_mark_verified.setEnabled(not is_verified)
+        btn_mark_verified.setText(
+            "✓ Verified" if is_verified else "✓ Verified by Second Examiner"
         )
 
     @staticmethod
