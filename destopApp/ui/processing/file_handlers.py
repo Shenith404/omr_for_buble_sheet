@@ -156,7 +156,10 @@ class ModelAnswersHandler:
 
         # Load the answers from the file after editing
         model_answers = ModelAnswersHandler.read_model_answers_file(model_answers_path)
-        
+        for ans in model_answers:
+            if ans not in range(1, 5):
+                raise ValueError("Model answers must be between 1 and 4.")
+
         return model_answers
 
     @staticmethod
