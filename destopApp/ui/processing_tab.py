@@ -722,16 +722,17 @@ class ProcessingTab(QWidget):
             self.btn_save_model_answers.setEnabled(False)
 
         except Exception as e:
-            QMessageBox.warning(self, "Error", f"An error occurred: {str(e)}. Recreating the file.")
-            try:
-                model_answers_path = os.path.join(self.project_path, "model_answers.xlsx")
-                if os.path.exists(model_answers_path):
-                    os.remove(model_answers_path)
-                ModelAnswersHandler.create_model_answers_file(model_answers_path)
-                ModelAnswersHandler.open_file_for_editing(model_answers_path)
-                QMessageBox.information(self, "Notice", "Please add the answers again.")
-            except Exception as recreate_error:
-                QMessageBox.critical(self, "Critical Error", f"Failed to recreate the file: {str(recreate_error)}")
+            if not isInitialSave:
+                QMessageBox.warning(self, "Error", f"An error occurred: {str(e)}. Recreating the file.")
+                try:
+                    model_answers_path = os.path.join(self.project_path, "model_answers.xlsx")
+                    if os.path.exists(model_answers_path):
+                        os.remove(model_answers_path)
+                    ModelAnswersHandler.create_model_answers_file(model_answers_path)
+                    ModelAnswersHandler.open_file_for_editing(model_answers_path)
+                    QMessageBox.information(self, "Notice", "Please add the answers again.")
+                except Exception as recreate_error:
+                    QMessageBox.critical(self, "Critical Error", f"Failed to recreate the file: {str(recreate_error)}")
 
     def edit_answers(self):
         """Open the model answers XLSX file for editing"""
