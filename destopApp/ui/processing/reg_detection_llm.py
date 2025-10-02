@@ -13,14 +13,11 @@ if not api_key:
 
 # Configure Gemini
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel("gemini-2.5-flash")
+model = genai.GenerativeModel("models/gemma-3-27b-it")
 
 
 def extract_digits_from_image(image_input):
-    """
-    Extract registration numbers in format: EG_20XX_XXXX
-    Supports file path, OpenCV image, or PIL image.
-    """
+ 
 
     try:
         # --- Convert input to PIL image ---
@@ -46,11 +43,17 @@ def extract_digits_from_image(image_input):
 
         # --- Prompt for Gemini ---
         prompt ="""
-Extract all text form this image.
-first two digits are E and G
-last 8 digits are numbers, give the result as one string
+Extract registration numbers from the following text.  Each registration number must adhere to the format EG/XXXX/YYYY, where:
 
+*   It always begins with "EG".
+*   The third character is a forward slash ("/").
+*   The next four characters represent the first part of the registration number (XXXX).
+*   Another forward slash ("/") separates the two parts.
+*   The final four characters represent the second part of the registration number (YYYY).
 
+Return a list of valid registration numbers in the format "EG_XXXX_YYYY".  Do not include any partial or invalid numbers.
+
+For example, if the input text contains "EG/1234/5678", the output should be EG_1234_5678. don give any other things
 """
 
         # --- Call Gemini ---
