@@ -4,7 +4,7 @@ import numpy as np
 from PySide6.QtCore import Signal, QObject
 import utils
 import model
-from . import reg_detection
+from . import reg_detection_llm as reg_detection
 
 
 class OMRProcessor(QObject):
@@ -135,14 +135,14 @@ class OMRProcessor(QObject):
                 warped_r = cv2.warpPerspective(img, matrix, (1000, 100))
                 
                 try:
-                    reg_number = reg_detection.detect_digits(warped_r)
+                    reg_number =  reg_detection.extract_digits_from_image(warped_r)
                     print("Reg Number Detection: ", reg_number)
 
-                    if reg_number["success"] and reg_number["total_detections"] > 0:
+                    if reg_number["success"]:
                         # Rename the file as registration number
                         reg_num_str = reg_number["digit_sequence"]
                         if reg_num_str:  # Check if digit_sequence is not empty
-                            new_filename = f"EG_{reg_num_str}.png"
+                            new_filename = f"{reg_num_str}.png"
                         else:
                             print("Warning: Registration number detected but digit sequence is empty")
                     else:
