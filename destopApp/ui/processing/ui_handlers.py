@@ -8,7 +8,7 @@ class UIProcessingHandler:
     """Handles UI-related processing operations"""
     
     @staticmethod
-    def initialize_processing(project_path, image_paths, model_answers):
+    def initialize_processing(project_path, image_paths, model_answers, model_answers_2=None):
         """Initialize processing setup"""
         if not image_paths or not project_path:
             raise Exception("No project or images loaded")
@@ -23,7 +23,7 @@ class UIProcessingHandler:
             # Delete existing json file
             handler.delete_answers_file()
             
-            # Save model answers to json file
+            # Save model answers to json file (save first list as primary)
             handler.save_model_answers(model_answers)
             
             return handler
@@ -32,11 +32,11 @@ class UIProcessingHandler:
             raise Exception(f"Error starting processing: {str(e)}")
 
     @staticmethod
-    def setup_worker_thread(image_paths, project_path, model_answers, omr_processor_class):
+    def setup_worker_thread(image_paths, project_path, model_answers, omr_processor_class, model_answers_2=None):
         """Setup worker thread with lower priority"""
         worker_thread = QThread()
         worker_thread.setPriority(QThread.LowPriority)
-        omr_processor = omr_processor_class(image_paths, project_path, model_answers)
+        omr_processor = omr_processor_class(image_paths, project_path, model_answers, model_answers_2)
         omr_processor.moveToThread(worker_thread)
         
         return worker_thread, omr_processor

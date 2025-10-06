@@ -4,7 +4,7 @@ import numpy as np
 import utils
 
 # Read Image
-image = cv2.imread('../images/test_24.jpg')
+image = cv2.imread('../images/test_21.jpg')
 image = cv2.resize(image, (1025, 760))
 
 
@@ -16,9 +16,14 @@ imgCanny=cv2.Canny(imgBlur,10,50)  #apply canny edge detection (image_source, th
  #finding all contours
 contours, hierarchy = cv2.findContours(imgCanny,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE) #RETR_EXTERNAL External method to find outer 
 rectCon =utils.rectContour(contours)
+print(len(rectCon))
 biggestContour = utils.getCornerPoints(rectCon[0])
 
+for x in rectCon:
+    print(cv2.contourArea(x))
+    
 biggestContour=utils.reorder(biggestContour)
+
                 
 pt1=np.float32(biggestContour)
 pt2=np.float32([[0,0],[1025,0],[0,760],[1025,760]])

@@ -24,11 +24,12 @@ class OMRProcessor(QObject):
     error_occurred = Signal(str)
     cancelled = Signal()
 
-    def __init__(self, image_paths, project_path, model_answers):
+    def __init__(self, image_paths, project_path, model_answers, model_answers_2=None):
         super().__init__()
         self.image_paths = image_paths
         self.project_path = project_path
-        self.model_answers = model_answers  # Model answers for comparison
+        self.model_answers = model_answers  # Model answers for comparison (List 1)
+        self.model_answers_2 = model_answers_2  # Model answers for shuffle (List 2)
         self._cancel_requested = False
         self.widthImg = 1025  # Standard OMR sheet width
         self.heightImg = 760  # Standard OMR sheet height
@@ -38,6 +39,8 @@ class OMRProcessor(QObject):
 
     def process_all(self):
         """Process all images with accurate progress tracking"""
+        print(self.model_answers)
+        print(self.model_answers_2)
         try:
             total_images = len(self.image_paths)
             processed_count = 0
@@ -230,7 +233,19 @@ class OMRProcessor(QObject):
 
         # Step 6: Generate Results with optimized drawing
         drawing = np.zeros_like(warped)
-        drawing,self.total_marks = utils.showAnswers(drawing, detected_answers, self.model_answers)
+        # Select model answers based on number of rectangles detected
+        # If len(rects) > 2, use model_answers (row 2), else use model_answers_2 (row 3)
+        print(len(rects), "area",cv2.contourArea(rects[2]) )
+        if len(rects) > 2 and cv2.contourArea(rects[2])>2000:
+            
+            drawing,self.total_marks = utils.showAnswers(drawing, detected_answers,self.model_answers)
+
+            print(f"Rectangle count: {len(rects)}, Using Model Answer 1 (Row 2)")
+        else:
+            drawing,self.total_marks = utils.showAnswers(drawing, detected_answers,self.model_answers_2)
+
+            print(f"Rectangle count: {len(rects)}, Using Model Answer 2 (Row 3)")
+        
         
         inv_matrix = cv2.getPerspectiveTransform(pts2, pts1)
         inv_drawing = cv2.warpPerspective(drawing, inv_matrix, (img.shape[1], img.shape[0]))

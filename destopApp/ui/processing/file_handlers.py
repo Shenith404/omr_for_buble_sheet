@@ -97,26 +97,32 @@ class ModelAnswersHandler:
     
     @staticmethod
     def create_model_answers_file(file_path):
-        """Create an Excel file where only the second row is editable with allowed values 0-4"""
+        """Create an Excel file with single sheet containing both model answer lists"""
         wb = Workbook()
         ws = wb.active
-
+        ws.title = "Model Answers"
+        
         # Write header (Q1 to Q50) in row 1
         for col in range(1, 51):
             cell = ws.cell(row=1, column=col, value=f"Q{col}")
             cell.protection = Protection(locked=True)  # lock header
 
-        # Write default answers (0s) in row 2
+        # Write default answers (1s) in row 2 - Model Answer 1 (compulsory)
         for col in range(1, 51):
-            cell = ws.cell(row=2, column=col, value=0)
+            cell = ws.cell(row=2, column=col, value=1)
+            cell.protection = Protection(locked=False)  # allow editing
+            
+        # Write default answers (1s) in row 3 - Model Answer 2 (compulsory)
+        for col in range(1, 51):
+            cell = ws.cell(row=3, column=col, value=1)
             cell.protection = Protection(locked=False)  # allow editing
 
-        # Add data validation (0 to 4) for editable answer cells
-        dv = DataValidation(type="whole", operator="between", formula1=0, formula2=4)
-        dv.error = "Please enter a number between 0 and 4."
+        # Add data validation (1 to 4) for editable answer cells
+        dv = DataValidation(type="whole", operator="between", formula1=1, formula2=4)
+        dv.error = "Please enter a number between 1 and 4."
         dv.errorTitle = "Invalid Input"
         ws.add_data_validation(dv)
-        dv.add("A2:AX2")  # 50 columns = A to AX
+        dv.add("A2:AX3")  # Both rows 2 and 3, 50 columns = A to AX
 
         # Lock sheet
         ws.protection.sheet = True
@@ -135,15 +141,24 @@ class ModelAnswersHandler:
 
     @staticmethod
     def read_model_answers_file(file_path):
-        """Read the model answers from the XLSX file and update the processor"""
+        """Read the model answers from single sheet with 3 rows"""
         wb = load_workbook(file_path, data_only=True)
         ws = wb.active
-        row = [ws.cell(row=2, column=col).value for col in range(1, 51)]
-        return [int(ans) if ans is not None else 0 for ans in row]
+        
+        # Read from row 2 (Model Answer 1) - compulsory
+        row2 = [ws.cell(row=2, column=col).value for col in range(1, 51)]
+        model_answers_1 = [int(ans) if ans is not None else 1 for ans in row2]
+        
+        # Read from row 3 (Model Answer 2) - compulsory
+        row3 = [ws.cell(row=3, column=col).value for col in range(1, 51)]
+        model_answers_2 = [int(ans) if ans is not None else 1 for ans in row3]
+       
+        
+        return model_answers_1, model_answers_2
 
     @staticmethod
     def save_model_answers_workflow(project_path):
-        """Complete workflow for saving model answers"""
+        """Complete workflow for saving model answers for both normal and shuffle MCQ"""
         if not project_path:
             raise Exception("No project is open. Please select a project first.")
 
@@ -154,13 +169,25 @@ class ModelAnswersHandler:
         if not os.path.exists(model_answers_path):
             ModelAnswersHandler.create_model_answers_file(model_answers_path)
 
-        # Load the answers from the file after editing
-        model_answers = ModelAnswersHandler.read_model_answers_file(model_answers_path)
-        for ans in model_answers:
+        # Load the answers from both rows in the file after editing
+        model_answers_1, model_answers_2 = ModelAnswersHandler.read_model_answers_file(model_answers_path)
+        
+        # Validate row 2 (Model Answer 1) - compulsory
+        for ans in model_answers_1:
             if ans not in range(1, 5):
-                raise ValueError("Model answers must be between 1 and 4.")
+                raise ValueError("Model answers in row 2 must be between 1 and 4. Row 2 is compulsory.")
+        
+        # Validate row 3 (Model Answer 2) - compulsory
+        for ans in model_answers_2:
+            if ans not in range(1, 5):
+                raise ValueError("Model answers in row 3 must be between 1 and 4. Row 3 is compulsory.")
+                
+        # Check if row 3 is empty (all values are 1, which is the default)
+        row3_is_empty = all(ans == 1 for ans in model_answers_2)
+        if row3_is_empty:
+            raise ValueError("Row 3 (Model Answer 2) cannot be empty. Both rows 2 and 3 are compulsory.")
 
-        return model_answers
+        return model_answers_1, model_answers_2
 
     @staticmethod
     def edit_answers_workflow(project_path):

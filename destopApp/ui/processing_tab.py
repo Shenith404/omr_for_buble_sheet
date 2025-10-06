@@ -44,7 +44,8 @@ class ProcessingTab(QWidget):
         self.processed_count = 0  # Track the number of processed images
         self.setup_ui()
         self.setup_connections()
-        self.model_answers = []  # Placeholder for model answers
+        self.model_answers = []  # Placeholder for model answers (Normal MCQ)
+        self.model_answers_2 = []  # Placeholder for shuffle model answers (Shuffle MCQ)
         self.handler=None
         
         # Initialize UI state
@@ -470,7 +471,8 @@ class ProcessingTab(QWidget):
             self.handler = UIProcessingHandler.initialize_processing(
                 self.project_path, 
                 self.image_paths, 
-                self.model_answers
+                self.model_answers,
+                self.model_answers_2
             )
             
             # Reset processing state
@@ -496,7 +498,8 @@ class ProcessingTab(QWidget):
                 self.image_paths, 
                 self.project_path, 
                 self.model_answers,
-                OMRProcessor
+                OMRProcessor,
+                self.model_answers_2
             )
             
             # Connect signals
@@ -715,7 +718,7 @@ class ProcessingTab(QWidget):
     def save_model_answers(self,isInitialSave=False):
         """Load or create model answers XLSX file and open it for editing"""
         try:
-            self.model_answers = ModelAnswersHandler.save_model_answers_workflow(self.project_path)
+            self.model_answers, self.model_answers_2 = ModelAnswersHandler.save_model_answers_workflow(self.project_path)
             if not isInitialSave:
                 QMessageBox.information(self, "Success", "Model answers saved successfully!")
             # Disable save answers button
