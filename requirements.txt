@@ -1,22 +1,38 @@
+# Core ML and Computer Vision
+tensorflow>=2.14.0
+opencv-python>=4.10.0
+numpy>=2.0.0
+pillow>=11.0.0
+ultralytics>=8.0.0
+imutils>=0.5.4
+
+# GUI Framework
+PySide6>=6.4.0
+
+# Data Processing and Excel handling
+openpyxl>=3.1.0
+pandas>=2.0.0
+
+# Google AI Integration
+google-generativeai>=0.3.0
+
+# Environment and Configuration
+python-dotenv>=1.0.0
+
+# Plotting and Visualization
+matplotlib>=3.10.1
 contourpy>=1.3.1
 cycler>=0.12.1
 fonttools>=4.56.0
-imutils>=0.5.4
 kiwisolver>=1.4.8
-matplotlib>=3.10.1
-numpy>=2.0.0
-opencv-python>=4.10.0
 packaging>=24.0
-pillow>=11.0.0
 pyparsing>=3.2.0
 python-dateutil>=2.9.0
 six>=1.17.0
-tensorflow>=2.14.0
-PySide6>=6.4.0
-openpyxl
-ultralytics
-google-generativeai
-python-dotenv
+
+# Additional useful packages for the project
+scikit-image>=0.22.0
+scipy>=1.11.0
 
 
 
