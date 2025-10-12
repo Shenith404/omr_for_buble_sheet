@@ -4,7 +4,7 @@ import numpy as np
 import utils
 
 # Read Image
-image = cv2.imread('../images/test_21.jpg')
+image = cv2.imread('../images/test_27.jpeg')
 image = cv2.resize(image, (1025, 760))
 
 

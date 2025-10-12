@@ -235,7 +235,6 @@ class OMRProcessor(QObject):
         drawing = np.zeros_like(warped)
         # Select model answers based on number of rectangles detected
         # If len(rects) > 2, use model_answers (row 2), else use model_answers_2 (row 3)
-        print(len(rects), "area",cv2.contourArea(rects[2]) )
         if len(rects) > 2 and cv2.contourArea(rects[2])>2000:
             
             drawing,self.total_marks = utils.showAnswers(drawing, detected_answers,self.model_answers)
