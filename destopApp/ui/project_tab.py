@@ -178,8 +178,8 @@ class ProjectTab(QWidget):
             layout.addWidget(location_label_header, 1, 0)
             layout.addWidget(self.location_label, 1, 1)
             layout.addWidget(self.btn_browse, 1, 2)
-            layout.addWidget(self.btn_create, 2, 0, 1, 3)
-            layout.addWidget(self.btn_open, 3, 0, 1, 3)
+            layout.addWidget(self.btn_create, 2,2)
+            layout.addWidget(self.btn_open, 2, 1)
 
             self.project_group.setLayout(layout)
 
