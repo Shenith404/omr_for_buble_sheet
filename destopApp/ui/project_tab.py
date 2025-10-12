@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QPixmap, QImage, QIcon, QFont, QColor
 from PySide6.QtCore import Qt, Signal, QTimer, QSize
 import utils  # Assuming utils is a module with required functions
+import platform
 
 class ProjectTab(QWidget):
     project_created = Signal(str)
@@ -19,11 +20,14 @@ class ProjectTab(QWidget):
         super().__init__()
         self.current_project = None
         self.webcam_active = False
+        self.selected_webcam_index = 0
+        self.available_cameras = []
         self.cap = None
         self.webcam_timer = QTimer()
         self.captured_frame = None
         self.preview_width = 640
         self.preview_height = 480
+
         self.setup_ui()
 
     def setup_ui(self):
@@ -253,6 +257,48 @@ class ProjectTab(QWidget):
                 }
             """)
 
+            # webcam selection
+            self.webcam_selection_box = QComboBox()
+            self.webcam_selection_box.addItems(self.available_cameras)
+            self.webcam_selection_box.currentIndexChanged.connect(self.toggle_source)
+            self.webcam_selection_box.setMinimumWidth(150)
+            self.webcam_selection_box.setStyleSheet("""
+                QComboBox {
+                    background: #2a2a2a;
+                    border: 1px solid #404040;
+                    border-radius: 6px;
+                    color: #e8e8e8;
+                    font-size: 13px;
+                    padding: 8px 12px;
+                    min-width: 120px;
+                    font-weight: 500;
+                }
+                QComboBox:focus {
+                    border-color: #0078d4;
+                    background: #323232;
+                }
+                QComboBox::drop-down {
+                    border: none;
+                    width: 20px;
+                }
+                QComboBox::down-arrow {
+                    image: none;
+                    border-left: 4px solid transparent;
+                    border-right: 4px solid transparent;
+                    border-top: 4px solid #e8e8e8;
+                    margin-right: 8px;
+                }
+                QComboBox QAbstractItemView {
+                    background: #2a2a2a;
+                    border: 1px solid #404040;
+                    border-radius: 6px;
+                    color: #e8e8e8;
+                    selection-background-color: #0078d4;
+                    outline: none;
+                }
+            """)
+            self.webcam_selection_box.hide()
+            
             # Action buttons
             self.btn_add = self.create_styled_button(
                 "Add Images", "#007bff", "list-add")
@@ -276,6 +322,7 @@ class ProjectTab(QWidget):
 
             # Add to layout
             layout.addWidget(self.source_combo)
+            layout.addWidget(self.webcam_selection_box)
             layout.addWidget(self.btn_add)
             layout.addWidget(self.btn_link)
             layout.addWidget(self.btn_capture)
@@ -551,6 +598,7 @@ class ProjectTab(QWidget):
         try:
             if index == 0:  # File
                 self.btn_capture.hide()
+                self.webcam_selection_box.hide()
                 self.btn_save.hide()
                 self.btn_add.show()
                 self.btn_link.show()
@@ -562,6 +610,8 @@ class ProjectTab(QWidget):
                 self.btn_add.hide()
                 self.btn_link.hide()
                 self.btn_capture.show()
+                self.find_available_cameras()
+                self.webcam_selection_box.show()
                 self.start_webcam()
         except Exception as e:
             self.show_error("Source Error", f"Failed to switch source: {str(e)}")
@@ -573,7 +623,7 @@ class ProjectTab(QWidget):
             if self.webcam_active:
                 return
 
-            self.cap = cv2.VideoCapture(0)
+            self.cap = cv2.VideoCapture(self.selected_webcam_index)
             if not self.cap.isOpened():
                 raise RuntimeError("Could not open webcam")
 
@@ -587,6 +637,34 @@ class ProjectTab(QWidget):
             self.show_error("Webcam Error", f"Failed to start webcam: {str(e)}")
             self.stop_webcam()
             self.source_combo.setCurrentIndex(0)
+
+    # In your find_available_cameras method:
+
+    def find_available_cameras(self):
+        """
+        Finds and returns a list of available camera indices using a stable backend.
+        Automatically selects the right backend based on OS and availability.
+        """
+        available_cameras = []
+
+        # Automatically choose backend based on platform
+        if platform.system() == "Windows":
+            backends = [cv2.CAP_DSHOW, cv2.CAP_MSMF, cv2.CAP_VFW]  # Try these in order
+        else:
+            backends = [cv2.CAP_V4L2, cv2.CAP_ANY]  # Linux/macOS
+        
+        for backend in backends:
+            for i in range(10):
+                cap = cv2.VideoCapture(i, backend)
+                if cap.isOpened():
+                    available_cameras.append(i)
+                    cap.release()
+            # If we found at least one, stop trying further backends
+            if available_cameras:
+                break
+
+        self.available_cameras = available_cameras
+        print(f"✅ Available cameras: {available_cameras} (using backend {backend})")
 
     def stop_webcam(self):
         """Stop webcam capture and release resources"""
