@@ -11,6 +11,9 @@ from PySide6.QtCore import Qt, Signal, QTimer, QSize
 import utils  # Assuming utils is a module with required functions
 import platform
 
+# Suppress OpenCV warnings for cleaner output during camera detection
+os.environ['OPENCV_LOG_LEVEL'] = 'ERROR'
+
 class ProjectTab(QWidget):
     project_created = Signal(str)
     project_opened = Signal(str)
@@ -71,9 +74,21 @@ class ProjectTab(QWidget):
 
             self.setLayout(main_layout)
             self.setMinimumSize(900, 750)
+            
+            # Initialize camera detection in the background
+            QTimer.singleShot(1000, self.initialize_cameras)
 
         except Exception as e:
             self.show_error("UI Setup Failed", f"Failed to initialize UI: {str(e)}")
+
+    def initialize_cameras(self):
+        """Initialize camera detection in the background"""
+        try:
+            # Only detect cameras, don't start them yet
+            self.find_available_cameras()
+            print(f"Camera initialization complete. Found {len(self.available_cameras)} cameras.")
+        except Exception as e:
+            print(f"Error during camera initialization: {e}")
 
     def setup_project_management_ui(self):
         """Setup project creation/opening controls"""
@@ -259,8 +274,8 @@ class ProjectTab(QWidget):
 
             # webcam selection
             self.webcam_selection_box = QComboBox()
-            self.webcam_selection_box.addItems(self.available_cameras)
-            self.webcam_selection_box.currentIndexChanged.connect(self.toggle_source)
+            self.update_webcam_selection_box()
+            self.webcam_selection_box.currentIndexChanged.connect(self.on_webcam_selection_changed)
             self.webcam_selection_box.setMinimumWidth(150)
             self.webcam_selection_box.setStyleSheet("""
                 QComboBox {
@@ -609,8 +624,20 @@ class ProjectTab(QWidget):
             else:  # Webcam
                 self.btn_add.hide()
                 self.btn_link.hide()
-                self.btn_capture.show()
+                
+                # Find available cameras first
                 self.find_available_cameras()
+                
+                if not self.available_cameras:
+                    QMessageBox.warning(
+                        self, 
+                        "No Cameras", 
+                        "No cameras were detected. Please check that a camera is connected and not being used by another application."
+                    )
+                    self.source_combo.setCurrentIndex(0)  # Switch back to File mode
+                    return
+                
+                self.btn_capture.show()
                 self.webcam_selection_box.show()
                 self.start_webcam()
         except Exception as e:
@@ -623,14 +650,61 @@ class ProjectTab(QWidget):
             if self.webcam_active:
                 return
 
-            self.cap = cv2.VideoCapture(self.selected_webcam_index)
-            if not self.cap.isOpened():
-                raise RuntimeError("Could not open webcam")
+            # Check if we have any available cameras
+            if not self.available_cameras:
+                raise RuntimeError("No cameras available")
+                
+            if self.selected_webcam_index not in self.available_cameras:
+                raise RuntimeError(f"Selected camera {self.selected_webcam_index} not available")
+
+            # Try different backends for better compatibility
+            backends = []
+            if platform.system() == "Windows":
+                backends = [cv2.CAP_DSHOW, cv2.CAP_MSMF, cv2.CAP_VFW]
+            else:
+                backends = [cv2.CAP_V4L2, cv2.CAP_ANY]
+
+            # Try to open the camera with different backends
+            self.cap = None
+            for backend in backends:
+                try:
+                    self.cap = cv2.VideoCapture(self.selected_webcam_index, backend)
+                    if self.cap.isOpened():
+                        # Test if we can actually read from the camera
+                        ret, frame = self.cap.read()
+                        if ret and frame is not None:
+                            break
+                        else:
+                            self.cap.release()
+                            self.cap = None
+                    else:
+                        if self.cap is not None:
+                            self.cap.release()
+                            self.cap = None
+                except:
+                    if self.cap is not None:
+                        self.cap.release()
+                        self.cap = None
+
+            if self.cap is None or not self.cap.isOpened():
+                raise RuntimeError(f"Could not open camera {self.selected_webcam_index}")
+
+            # Set optimal camera properties
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+            self.cap.set(cv2.CAP_PROP_FPS, 30)
 
             self.webcam_active = True
+            
+            # Disconnect any existing timer connections to prevent duplicates
+            try:
+                self.webcam_timer.timeout.disconnect()
+            except (TypeError, RuntimeError):
+                pass  # No connection to disconnect
+                
             self.webcam_timer.timeout.connect(self.update_webcam_preview)
             self.webcam_timer.start(30)  # ~30 FPS
-            self.status_label.setText("Webcam active - ready to capture")
+            self.status_label.setText(f"Camera {self.selected_webcam_index} active - ready to capture")
             self.preview_label.setText("Initializing webcam...")
 
         except Exception as e:
@@ -646,6 +720,7 @@ class ProjectTab(QWidget):
         Automatically selects the right backend based on OS and availability.
         """
         available_cameras = []
+        successful_backend = None
 
         # Automatically choose backend based on platform
         if platform.system() == "Windows":
@@ -654,17 +729,138 @@ class ProjectTab(QWidget):
             backends = [cv2.CAP_V4L2, cv2.CAP_ANY]  # Linux/macOS
         
         for backend in backends:
-            for i in range(10):
-                cap = cv2.VideoCapture(i, backend)
-                if cap.isOpened():
-                    available_cameras.append(i)
-                    cap.release()
-            # If we found at least one, stop trying further backends
-            if available_cameras:
-                break
+            temp_cameras = []
+            try:
+                # Only check first few indices to reduce warnings
+                for i in range(5):  # Check up to 5 camera indices (most systems have <= 2 cameras)
+                    cap = None
+                    try:
+                        cap = cv2.VideoCapture(i, backend)
+                        if cap.isOpened():
+                            # Test if we can actually read from the camera
+                            ret, frame = cap.read()
+                            if ret and frame is not None:
+                                temp_cameras.append(i)
+                                print(f"Found working camera at index {i} with backend {backend}")
+                    except Exception as e:
+                        # Suppress common warnings for non-existent cameras
+                        if "can't be used to capture" not in str(e):
+                            print(f"Error testing camera {i} with backend {backend}: {e}")
+                    finally:
+                        if cap is not None:
+                            cap.release()
+                            
+                # If we found cameras with this backend, use them
+                if temp_cameras:
+                    available_cameras = temp_cameras
+                    successful_backend = backend
+                    break
+                    
+            except Exception as e:
+                print(f"Error with backend {backend}: {e}")
+                continue
 
         self.available_cameras = available_cameras
-        print(f"✅ Available cameras: {available_cameras} (using backend {backend})")
+        
+        if successful_backend is not None:
+            print(f"✅ Available cameras: {available_cameras} (using backend {successful_backend})")
+        else:
+            print("❌ No cameras found with any backend")
+        
+        # Update the webcam selection combo box
+        self.update_webcam_selection_box()
+        
+        # Reset selected webcam index if current selection is invalid
+        if available_cameras and self.selected_webcam_index not in available_cameras:
+            self.selected_webcam_index = available_cameras[0]
+        elif not available_cameras:
+            self.selected_webcam_index = 0
+
+    def update_webcam_selection_box(self):
+        """Update the webcam selection combo box with available cameras"""
+        try:
+            # Temporarily disconnect signal to avoid triggering selection change
+            try:
+                self.webcam_selection_box.currentIndexChanged.disconnect()
+            except (TypeError, RuntimeError):
+                # Signal might not be connected yet, which is fine
+                pass
+            
+            # Clear and repopulate the combo box
+            self.webcam_selection_box.clear()
+            
+            if not self.available_cameras:
+                self.webcam_selection_box.addItem("No cameras available")
+                self.webcam_selection_box.setEnabled(False)
+            else:
+                # Add cameras with descriptive names
+                for i, camera_index in enumerate(self.available_cameras):
+                    camera_name = f"Camera {camera_index}"
+                    # Try to get camera resolution for better identification
+                    # Only do this for cameras we know work (from our detection)
+                    try:
+                        # Use the backend that worked during detection
+                        if platform.system() == "Windows":
+                            backend = cv2.CAP_DSHOW  # Use the one that worked
+                        else:
+                            backend = cv2.CAP_V4L2
+                            
+                        cap = cv2.VideoCapture(camera_index, backend)
+                        if cap.isOpened():
+                            # Get resolution info quickly
+                            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                            if width > 0 and height > 0:
+                                camera_name = f"Camera {camera_index} ({width}x{height})"
+                            cap.release()
+                    except Exception:
+                        # Silently fall back to simple name to avoid spam
+                        pass
+                        
+                    self.webcam_selection_box.addItem(camera_name)
+                
+                self.webcam_selection_box.setEnabled(True)
+                
+                # Set current selection
+                if self.selected_webcam_index in self.available_cameras:
+                    current_index = self.available_cameras.index(self.selected_webcam_index)
+                    self.webcam_selection_box.setCurrentIndex(current_index)
+                else:
+                    # Default to first camera if current selection is invalid
+                    if self.available_cameras:
+                        self.webcam_selection_box.setCurrentIndex(0)
+                        self.selected_webcam_index = self.available_cameras[0]
+                
+        except Exception as e:
+            print(f"Error updating webcam selection box: {e}")
+            self.webcam_selection_box.clear()
+            self.webcam_selection_box.addItem("Error loading cameras")
+            self.webcam_selection_box.setEnabled(False)
+        finally:
+            # Reconnect the signal
+            self.webcam_selection_box.currentIndexChanged.connect(self.on_webcam_selection_changed)
+
+    def on_webcam_selection_changed(self, index):
+        """Handle webcam selection change"""
+        try:
+            if not self.available_cameras or index < 0 or index >= len(self.available_cameras):
+                return
+                
+            new_camera_index = self.available_cameras[index]
+            
+            # Only restart webcam if we're switching to a different camera
+            if new_camera_index != self.selected_webcam_index:
+                self.selected_webcam_index = new_camera_index
+                print(f"Selected camera index: {self.selected_webcam_index}")
+                
+                # If webcam is currently active, restart it with new camera
+                if self.webcam_active:
+                    self.stop_webcam()
+                    self.start_webcam()
+                    
+        except Exception as e:
+            print(f"Error changing webcam selection: {e}")
+            self.show_error("Camera Selection Error", f"Failed to change camera: {str(e)}")
 
     def stop_webcam(self):
         """Stop webcam capture and release resources"""
@@ -672,15 +868,28 @@ class ProjectTab(QWidget):
             if not self.webcam_active:
                 return
 
+            # Stop timer and disconnect signals
             self.webcam_timer.stop()
+            try:
+                self.webcam_timer.timeout.disconnect()
+            except (TypeError, RuntimeError):
+                pass  # No connection to disconnect
+                
             self.webcam_active = False
+            
+            # Release camera resources
             if self.cap is not None:
                 self.cap.release()
                 self.cap = None
-            self.preview_label.clear()
-            self.preview_label.setText("Webcam inactive")
+                
+            # Clear preview
+            if hasattr(self, 'preview_label'):
+                self.preview_label.clear()
+                self.preview_label.setText("Webcam inactive")
+                
         except Exception as e:
-            self.show_error("Webcam Error", f"Failed to stop webcam: {str(e)}")
+            print(f"Error stopping webcam: {e}")
+            # Don't show error dialog as this might be called during shutdown
 
     def update_webcam_preview(self):
         """Update the preview with the current webcam frame"""
@@ -689,16 +898,21 @@ class ProjectTab(QWidget):
                 return
 
             ret, frame = self.cap.read()
-            if not ret:
-                raise RuntimeError("Failed to capture frame")
+            if not ret or frame is None:
+                # Don't immediately error - sometimes frames fail temporarily
+                print("Warning: Failed to capture frame, skipping this update")
+                return
 
             self.current_frame = frame
             self.display_image(frame)
 
         except Exception as e:
-            self.show_error("Preview Error", f"Failed to update preview: {str(e)}")
-            self.stop_webcam()
-            self.source_combo.setCurrentIndex(0)
+            print(f"Error in webcam preview: {e}")
+            # Only show error dialog if this is a critical failure
+            if "Failed to capture frame" in str(e):
+                self.show_error("Preview Error", f"Camera disconnected or failed: {str(e)}")
+                self.stop_webcam()
+                self.source_combo.setCurrentIndex(0)
 
     def capture_webcam_image(self):
         """Capture the current webcam frame"""
