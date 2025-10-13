@@ -4,42 +4,90 @@ from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment
 from openpyxl.utils import get_column_letter
-class OMRJsonHandler:
-    def __init__(self, project_path):
-        self.json_path = os.path.join(project_path, "results", "answers.json")
+from pin_lock.security_manager import SecurityManager
 
+
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+class OMRJsonHandler:
+    # --- MODIFIED: Accept an encryption key during initialization ---
+    def __init__(self, project_path, security_manager=None):
+        """
+        Initialize the handler with a path and a 32-byte encryption key.
+        """
+        self.json_path = os.path.join(project_path, "results", "answers.json")
+        
+        if security_manager is None:
+            security_manager = SecurityManager()
+        
+        encryption_key = security_manager.get_aes_key()
+        
+        # The key must be 32 bytes for AES-256
+        if encryption_key is None:
+            raise ValueError("Encryption key is not available. Please verify PIN first.")
+        if len(encryption_key) != 32:
+            raise ValueError("Encryption key must be 32 bytes long.")
+        self.key = encryption_key
+        
         os.makedirs(os.path.dirname(self.json_path), exist_ok=True)
         self._initialize_file()
 
     def _initialize_file(self):
-        """Create empty JSON file if not exists"""
+        """Create empty, encrypted JSON file if it doesn't exist."""
         if not os.path.exists(self.json_path):
-            with open(self.json_path, 'w') as f:
-                json.dump({
-                    "_metadata": {
-                        "version": 1.0,
-                        "created": datetime.now().isoformat(),
-                        "total_sheets": 0
-                    },
-                    "data": {}
-                }, f, indent=4)
+            empty_data = {
+                "_metadata": {
+                    "version": 1.0,
+                    "created": datetime.now().isoformat(),
+                    "total_sheets": 0
+                },
+                "data": {}
+            }
+            # Save the initial empty structure, which will encrypt it.
+            self._save_data(empty_data)
 
+    # --- MODIFIED: Decrypts data after reading from disk ---
     def _load_data(self):
-        """Load and validate JSON data"""
-        with open(self.json_path, 'r') as f:
-            data = json.load(f)
+        """Load and decrypt JSON data."""
+        try:
+            with open(self.json_path, 'rb') as f:
+                nonce = f.read(12)  # Read the 12-byte nonce
+                encrypted_data = f.read()  # Read the rest of the encrypted content
             
-            # Backward compatibility for old format
+            aesgcm = AESGCM(self.key)
+            decrypted_json_bytes = aesgcm.decrypt(nonce, encrypted_data, None)
+            data = json.loads(decrypted_json_bytes.decode('utf-8'))
+
+            # Backward compatibility for old format (can remain as is)
             if "data" not in data:
                 data = {"_metadata": {}, "data": data}
-                
+            
             return data
+        except FileNotFoundError:
+            # If file doesn't exist, return a default empty structure
+            return {"_metadata": {"total_sheets": 0}, "data": {}}
+        except Exception as e:
+            # Handle potential decryption errors (e.g., wrong key)
+            print(f"Error decrypting or loading data: {e}")
+            raise IOError("Could not read or decrypt the data file. The file may be corrupt or the key incorrect.")
 
+    # --- MODIFIED: Encrypts data before saving to disk ---
     def _save_data(self, data):
-        """Atomic write to JSON file"""
+        """Encrypt and atomically write to JSON file."""
+        # Convert the Python dict to JSON bytes
+        json_bytes = json.dumps(data, indent=4).encode('utf-8')
+
+        # Encrypt the JSON bytes
+        aesgcm = AESGCM(self.key)
+        nonce = os.urandom(12) # A new, random nonce must be used for every save
+        encrypted_data = aesgcm.encrypt(nonce, json_bytes, None)
+
+        # Write the nonce + encrypted data to the temp file
         temp_path = self.json_path + ".tmp"
-        with open(temp_path, 'w') as f:
-            json.dump(data, f, indent=4)
+        with open(temp_path, 'wb') as f:
+            f.write(nonce)
+            f.write(encrypted_data)
+            
         os.replace(temp_path, self.json_path)
 
     # --- CRUD Operations ---

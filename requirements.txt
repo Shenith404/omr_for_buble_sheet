@@ -33,6 +33,11 @@ six>=1.17.0
 # Additional useful packages for the project
 scikit-image>=0.22.0
 scipy>=1.11.0
+# Secure PIN Management
+argon2-cffi>=21.3.0
+keyring>=24.0.0
+#encryption
+cryptography>=46.0.2
 
 
 

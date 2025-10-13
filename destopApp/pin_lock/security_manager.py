@@ -1,3 +1,4 @@
+import hashlib
 import keyring
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
@@ -10,7 +11,18 @@ USERNAME = "user_pin"
 class SecurityManager:
     """Handles hashing, verification, and secure storage of the PIN."""
     
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(SecurityManager, cls).__new__(cls)
+        return cls._instance
+    
     def __init__(self):
+        if SecurityManager._initialized:
+            return
+            
         # Argon2 is the current gold standard for password hashing
         self._ph = PasswordHasher(
             time_cost=3,      # Increases the number of iterations
@@ -19,6 +31,8 @@ class SecurityManager:
             hash_len=16,      # Length of the final hash
             salt_len=16       # Length of the random salt
         )
+        self._aes_key = None  # Placeholder for AES key if needed later
+        SecurityManager._initialized = True
 
     def is_pin_set(self) -> bool:
         """Check if a PIN is already stored in the OS keychain."""
@@ -38,6 +52,7 @@ class SecurityManager:
             
             # This will raise an exception if the PIN doesn't match
             self._ph.verify(stored_hash, pin)
+            self._aes_key = self.derive_key_from_pin(pin) # Derive AES key on successful verification
             return True
         except VerifyMismatchError:
             # The PIN was incorrect
@@ -46,3 +61,24 @@ class SecurityManager:
             # Handle other potential errors, e.g., keyring access issues
             print(f"An unexpected security error occurred: {e}")
             return False
+    
+    def derive_key_from_pin(self,pin: str) -> bytes:
+        """
+        Create a 32-byte key from the PIN using PBKDF2-HMAC-SHA256.
+        """
+        salt = b'' 
+        iterations = 390000 
+        key_length = 32
+        hash_algorithm = 'sha256'
+        
+        key = hashlib.pbkdf2_hmac(
+            hash_algorithm,
+            pin.encode('utf-8'),
+            salt, 
+            iterations,
+            dklen=key_length
+        )
+        return key
+    def get_aes_key(self) -> bytes:
+        """Returns the derived AES key after successful PIN verification."""
+        return self._aes_key
