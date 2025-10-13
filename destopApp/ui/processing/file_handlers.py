@@ -182,10 +182,10 @@ class ModelAnswersHandler:
             if ans not in range(1, 5):
                 raise ValueError("Model answers in row 3 must be between 1 and 4. Row 3 is compulsory.")
                 
-        # Check if row 3 is empty (all values are 1, which is the default)
-        row3_is_empty = all(ans == 1 for ans in model_answers_2)
-        if row3_is_empty:
-            raise ValueError("Row 3 (Model Answer 2) cannot be empty. Both rows 2 and 3 are compulsory.")
+        # # Check if row 3 is empty (all values are 1, which is the default)
+        # row3_is_empty = all(ans == 1 for ans in model_answers_2)
+        # if row3_is_empty:
+        #     raise ValueError("Row 3 (Model Answer 2) cannot be empty. Both rows 2 and 3 are compulsory.")
 
         return model_answers_1, model_answers_2
 
