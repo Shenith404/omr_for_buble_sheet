@@ -153,6 +153,33 @@ class OMRJsonHandler:
         
         self._save_data(data)
         return sheet["detected"]
+    def update_correction_by_second_examiner(self, filename, question_num, new_answer):
+        """Manually correct a single answer"""
+        data = self._load_data()
+        
+        if filename not in data["data"]:
+            raise ValueError("Sheet not found")
+            
+        sheet = data["data"][filename]
+        
+        # Initialize 'detected' if it doesn't exist
+        if "detected" not in sheet:
+            sheet["detected"] = {}
+        
+        sheet["detected"][question_num] = new_answer
+        sheet["reviewed"] = True
+        sheet["verified"] = False
+        sheet["last_modified"] = datetime.now().isoformat()
+        
+        # Recalculate marks if needed
+        if "model_answers" in data["_metadata"]:
+            sheet["total_marks"] = self._calculate_marks(
+                sheet["detected"],
+                data["_metadata"]["model_answers"]
+            )
+        
+        self._save_data(data)
+        return sheet["detected"]
     
     
 

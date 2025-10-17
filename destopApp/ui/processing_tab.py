@@ -609,6 +609,7 @@ class ProcessingTab(QWidget):
         self.current_answers = state['current_answers']
         self.processed_count = state['processed_count']
 
+        self.load_project(self.project_path)
         # Emit a signal or update the UI to allow navigation
         self.processing_cancelled.emit()
 

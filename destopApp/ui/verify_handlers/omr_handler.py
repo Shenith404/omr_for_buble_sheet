@@ -162,7 +162,7 @@ class VerifyOMRHandler:
         
         try:
             # Update the answer in the database
-            new_detected_answers = handler.update_correction(
+            new_detected_answers = handler.update_correction_by_second_examiner(
                 current_image_filename,
                 question_num - 1,  # Convert to 0-based index
                 new_answer + 1  # Detected answers saved as 1->2 2->3 3->4 4->5 and no answers saved as -1
@@ -183,12 +183,17 @@ class VerifyOMRHandler:
                 new_detected_answers,
                 model_answers
             )
-            
+
+
+            # Draw the review stamp
+            reviewed_img = utils.draw_stamp(result_img, input_name="First Examiner", position=(25, 50), color=(0, 0, 255))
+
             # Save the updated image back to results folder
             result_image_path = os.path.join(
                 project_path, "results", current_image_filename
             )
             cv2.imwrite(result_image_path, result_img)
+
             
             return result_image_path
             
