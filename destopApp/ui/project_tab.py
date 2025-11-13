@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
     QPushButton, QLabel, QComboBox, QFileDialog,
     QLineEdit, QMessageBox, QGridLayout, QSizePolicy
 )
-from PySide6.QtGui import QPixmap, QImage, QIcon, QFont, QColor
+from PySide6.QtGui import QPixmap, QImage,  QColor
 from PySide6.QtCore import Qt, Signal, QTimer, QSize
 import utils  # Assuming utils is a module with required functions
 import platform
@@ -390,7 +390,6 @@ class ProjectTab(QWidget):
                     color: #888888;
                     font-size: 14px;
                     font-weight: 500;
-                    padding: 20px;
                 }
                 QLabel:hover {
                     border-color: #0078d4;
@@ -690,8 +689,8 @@ class ProjectTab(QWidget):
                 raise RuntimeError(f"Could not open camera {self.selected_webcam_index}")
 
             # Set optimal camera properties
-            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
             self.cap.set(cv2.CAP_PROP_FPS, 30)
 
             self.webcam_active = True
@@ -986,14 +985,7 @@ class ProjectTab(QWidget):
 
             self.images_added.emit([saved_path])
             
-            # Show save confirmation
-            QMessageBox.information(
-                self,
-                "Success",
-                f"Image saved successfully to:\n{saved_path}",
-                QMessageBox.Ok
-            )
-            
+  
             # Reset UI
             self.reset_after_save()
 
