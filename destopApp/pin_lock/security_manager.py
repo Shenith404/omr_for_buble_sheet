@@ -52,7 +52,6 @@ class SecurityManager:
             
             # This will raise an exception if the PIN doesn't match
             self._ph.verify(stored_hash, pin)
-            self._aes_key = self.derive_key_from_pin(pin) # Derive AES key on successful verification
             return True
         except VerifyMismatchError:
             # The PIN was incorrect
@@ -61,8 +60,12 @@ class SecurityManager:
             # Handle other potential errors, e.g., keyring access issues
             print(f"An unexpected security error occurred: {e}")
             return False
+        
+    def set_project_pw(self,pw:str):
+        """Derives and stores the AES key from the project password (PIN)."""
+        self._aes_key = self.derive_key_from_project_pw(pw)
     
-    def derive_key_from_pin(self,pin: str) -> bytes:
+    def derive_key_from_project_pw(self,pin: str) -> bytes:
         """
         Create a 32-byte key from the PIN using PBKDF2-HMAC-SHA256.
         """

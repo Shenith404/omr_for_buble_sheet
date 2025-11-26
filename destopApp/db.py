@@ -5,7 +5,9 @@ from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment
 from openpyxl.utils import get_column_letter
 from pin_lock.security_manager import SecurityManager
-
+from PySide6.QtWidgets import (
+     QMessageBox
+)
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
@@ -31,6 +33,8 @@ class OMRJsonHandler:
         
         os.makedirs(os.path.dirname(self.json_path), exist_ok=True)
         self._initialize_file()
+
+   
 
     def _initialize_file(self):
         """Create empty, encrypted JSON file if it doesn't exist."""
@@ -66,10 +70,14 @@ class OMRJsonHandler:
         except FileNotFoundError:
             # If file doesn't exist, return a default empty structure
             return {"_metadata": {"total_sheets": 0}, "data": {}}
+        except cryptography.exceptions.InvalidTag:
+            QMessageBox.warning(self, "Input Error", "Please select a location")
+            raise IOError("Could not read or decrypt the data file. The file may be corrupt or the key incorrect.")
         except Exception as e:
             # Handle potential decryption errors (e.g., wrong key)
             print(f"Error decrypting or loading data: {e}")
             raise IOError("Could not read or decrypt the data file. The file may be corrupt or the key incorrect.")
+        
 
     # --- MODIFIED: Encrypts data before saving to disk ---
     def _save_data(self, data):

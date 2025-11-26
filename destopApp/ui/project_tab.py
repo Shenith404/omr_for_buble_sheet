@@ -10,6 +10,7 @@ from PySide6.QtGui import QPixmap, QImage,  QColor
 from PySide6.QtCore import Qt, Signal, QTimer, QSize
 import utils  # Assuming utils is a module with required functions
 import platform
+from pin_lock.security_manager import SecurityManager
 
 # Suppress OpenCV warnings for cleaner output during camera detection
 os.environ['OPENCV_LOG_LEVEL'] = 'ERROR'
@@ -30,6 +31,7 @@ class ProjectTab(QWidget):
         self.captured_frame = None
         self.preview_width = 640
         self.preview_height = 480
+        self.security_manager = SecurityManager()
 
         self.setup_ui()
 
@@ -119,8 +121,31 @@ class ProjectTab(QWidget):
             # Project Name
             self.project_name_input = QLineEdit()
             self.project_name_input.setPlaceholderText("Enter project name")
-            self.project_name_input.setMinimumWidth(250)
+            #self.project_name_input.setMinimumWidth(100)
             self.project_name_input.setStyleSheet("""
+                QLineEdit {
+                    background: #2a2a2a;
+                    border: 1px solid #404040;
+                    border-radius: 6px;
+                    color: #e8e8e8;
+                    font-size: 13px;
+                    padding: 10px 12px;
+                    selection-background-color: #0078d4;
+                }
+                QLineEdit:focus {
+                    border-color: #0078d4;
+                    background: #323232;
+                }
+                QLineEdit::placeholder {
+                    color: #888888;
+                }
+            """)
+
+             # Project Name
+            self.project_password_input = QLineEdit()
+            self.project_password_input.setPlaceholderText("Enter project Password")
+            #self.project_password_input.setMinimumWidth(100)
+            self.project_password_input.setStyleSheet("""
                 QLineEdit {
                     background: #2a2a2a;
                     border: 1px solid #404040;
@@ -193,7 +218,8 @@ class ProjectTab(QWidget):
 
             # Add to layout
             layout.addWidget(name_label, 0, 0)
-            layout.addWidget(self.project_name_input, 0, 1, 1, 2)
+            layout.addWidget(self.project_name_input, 0, 1)
+            layout.addWidget(self.project_password_input, 0, 2)
             layout.addWidget(location_label_header, 1, 0)
             layout.addWidget(self.location_label, 1, 1)
             layout.addWidget(self.btn_browse, 1, 2)
@@ -534,8 +560,16 @@ class ProjectTab(QWidget):
         """Create a new project directory structure"""
         try:
             project_name = self.project_name_input.text().strip()
+            #set project password
+            project_pw= self.project_password_input.text().strip()
+            self.security_manager.set_project_pw(project_pw)
+
+            
             if not project_name:
                 QMessageBox.warning(self, "Input Error", "Please enter a project name")
+                return
+            if not project_pw:
+                QMessageBox.warning(self, "Input Error", "Please enter a project Password")
                 return
 
             location = self.location_label.text()
@@ -578,6 +612,7 @@ class ProjectTab(QWidget):
             )
             if project_path:
                 self.load_project(project_path)
+
         except Exception as e:
             self.show_error("Open Error", f"Failed to open project: {str(e)}")
 
@@ -589,6 +624,14 @@ class ProjectTab(QWidget):
 
             if not os.path.exists(os.path.join(project_path, "image_references.txt")):
                 raise ValueError("Not a valid project directory")
+
+              #set project password
+            project_pw= self.project_password_input.text().strip()
+            self.security_manager.set_project_pw(project_pw)
+
+            if not project_pw:
+                QMessageBox.warning(self, "Input Error", "Please enter a project Password")
+                return
 
             self.current_project = project_path
             self.project_name_input.setText(os.path.basename(project_path))
