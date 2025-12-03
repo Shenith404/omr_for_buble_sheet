@@ -5,7 +5,7 @@ import os
 import model
 
 #constants
-path ='../images/test_22.jpeg'
+path ='../images/EG_2020_4000.png'
 widhtImg = 1025
 hightImg = 760
 webCamFeed = True
@@ -51,7 +51,8 @@ try:
         pt2=np.float32([[0,0],[widhtImg,0],[0,hightImg],[widhtImg,hightImg]])
         matrix=cv2.getPerspectiveTransform(pt1,pt2)
         imgWarpColored=cv2.warpPerspective(img,matrix,(widhtImg,hightImg))
-        
+
+        imgWarpColored2=imgWarpColored.copy()
         #Apply threshold
         imgWarpGray=cv2.cvtColor(imgWarpColored,cv2.COLOR_BGR2GRAY)
         imgWarpGray =cv2.convertScaleAbs(imgWarpGray, alpha=1, beta=50)
@@ -134,8 +135,8 @@ try:
 
         imgBlank = np.zeros_like(img)
 
-        imageArray=([imgContours,imgBiggestContours,imgWarpColored,erosion_image] ,
-            [imageResult,imageRowDrawing,imgFinal,imgBlank])
+        imageArray=([img,imgGray,imgBlur,imgBiggestContours] ,
+            [imgWarpColored2,thresh,erosion_image,imgWarpColored])
 except:
     imgBlank = np.zeros_like(img)
 
