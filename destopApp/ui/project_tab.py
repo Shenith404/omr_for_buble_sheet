@@ -1028,7 +1028,20 @@ class ProjectTab(QWidget):
 
             self.images_added.emit([saved_path])
             
-  
+            # Show success notification
+            self.status_label.setText(f"Image captured and saved successfully!")
+            
+            # Show auto-closing message box
+            msg_box = QMessageBox(self)
+            msg_box.setIcon(QMessageBox.Information)
+            msg_box.setWindowTitle("Success")
+            msg_box.setText(f"Image saved to:\n{saved_path}")
+            msg_box.setStandardButtons(QMessageBox.Ok)
+            msg_box.show()
+            
+            # Auto-close after 1 second
+            QTimer.singleShot(1000, msg_box.close)
+            
             # Reset UI
             self.reset_after_save()
 
