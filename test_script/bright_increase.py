@@ -2,9 +2,10 @@ import cv2
 import numpy as np
 
 import utils
+import reg_detection_shaded as r
 
 # Read Image
-image = cv2.imread('../images/test_27.jpeg')
+image = cv2.imread('../images/test_28.jpeg')
 image = cv2.resize(image, (1025, 760))
 
 
@@ -21,6 +22,41 @@ biggestContour = utils.getCornerPoints(rectCon[0])
 
 for x in rectCon:
     print(cv2.contourArea(x))
+
+
+#read registration number
+if len(rectCon) > 1:  # Check if we have at least 2 rectangles before accessing rects[1]
+    reg_contour = utils.getCornerPoints(rectCon[1]) 
+
+    if reg_contour.size != 0:
+        reg_contour = utils.reorder(reg_contour)
+        pts1r = np.float32(reg_contour)
+        pts2r = np.float32([[0, 0], [1000, 0], [0, 400], [1000, 400]])
+        matrix = cv2.getPerspectiveTransform(pts1r, pts2r)
+        warped_r = cv2.warpPerspective(image, matrix, (1000, 400))
+        
+        try:
+            reg_number =  r.detect_reg_number(warped_r)
+            print("Reg Number Detection: ", reg_number)
+
+            if reg_number["success"]:
+                # Rename the file as registration number
+                reg_num_str = reg_number["digit_sequence"]
+                if reg_num_str:  # Check if digit_sequence is not empty
+                    new_filename = f"{reg_num_str}.png"
+                else:
+                    print("Warning: Registration number detected but digit sequence is empty")
+            else:
+                print("Warning: Registration number detection failed or no digits detected")
+        except Exception as e:
+            print(f"Error during registration number detection: {str(e)}")
+    else:
+        print("Warning: Registration contour not found or invalid")
+else:
+    print("Warning: Insufficient rectangles detected for registration number processing")
+          
+
+
     
 biggestContour=utils.reorder(biggestContour)
 
