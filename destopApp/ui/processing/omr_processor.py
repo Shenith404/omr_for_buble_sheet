@@ -4,7 +4,7 @@ import numpy as np
 from PySide6.QtCore import Signal, QObject
 import utils
 import model
-from . import reg_detection_llm as reg_detection
+from . import reg_detection_shaded as reg_detection
 
 
 class OMRProcessor(QObject):
@@ -138,7 +138,7 @@ class OMRProcessor(QObject):
                 warped_r = cv2.warpPerspective(img, matrix, (1000, 100))
                 
                 try:
-                    reg_number =  reg_detection.extract_digits_from_image(warped_r)
+                    reg_number =  reg_detection.detect_reg_number(warped_r)
                     print("Reg Number Detection: ", reg_number)
 
                     if reg_number["success"]:

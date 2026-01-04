@@ -4,6 +4,7 @@ import numpy as np
 import utils
 
 def detect_reg_number(image):
+   
     #Apply threshold
     imgWarpGray=cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
 
