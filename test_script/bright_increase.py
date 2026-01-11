@@ -5,7 +5,7 @@ import utils
 import reg_detection_shaded as r
 
 # Read Image
-image = cv2.imread('../images/test_28.jpeg')
+image = cv2.imread('../images/EG_0555.png')
 image = cv2.resize(image, (1025, 760))
 
 
@@ -70,7 +70,8 @@ imgWarpColored=cv2.warpPerspective(image,matrix,(1025,760))
 imgWarpGray=cv2.cvtColor(imgWarpColored,cv2.COLOR_BGR2GRAY)
 
 thresh = cv2.adaptiveThreshold(imgWarpGray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                               cv2.THRESH_BINARY_INV, 11, 2)
+                                cv2.THRESH_BINARY_INV, 11, 2)
+#_, thresh = cv2.threshold(imgWarpGray, 125, 255, cv2.THRESH_BINARY_INV)
 
 # Morphological Opening 
 kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
