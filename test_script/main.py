@@ -5,7 +5,7 @@ import os
 import model
 
 #constants
-path ='../images/EG_2020_4000.png'
+path ='../images/EG_1278.png'
 widhtImg = 1025
 hightImg = 760
 webCamFeed = True

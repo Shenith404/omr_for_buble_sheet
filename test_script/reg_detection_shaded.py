@@ -32,6 +32,13 @@ def detect_reg_number(image):
         #get the maximum white pixel box index of columns
         pixelValues = []
         for box in cols:
+             # Crop image: 1% from left/right, 5% from top/bottom
+            h, w = box.shape
+            left = int(w * 0.1)
+            right = int(w * 0.9)
+            top = int(h * 0.1)
+            bottom = int(h * 0.9)
+            box = box[top:bottom, left:right]
             totalPixels = cv2.countNonZero(box)
             print(totalPixels)
             pixelValues.append(totalPixels)

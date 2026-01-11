@@ -5,7 +5,7 @@ import utils
 import reg_detection_shaded as r
 
 # Read Image
-image = cv2.imread('../images/EG_0555.png')
+image = cv2.imread('../images/EG_1278.png')
 image = cv2.resize(image, (1025, 760))
 
 

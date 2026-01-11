@@ -12,25 +12,26 @@ def detect_reg_number(image):
         #                             cv2.THRESH_BINARY_INV, 11, 2)
         _, thresh = cv2.threshold(imgWarpGray, 100, 255, cv2.THRESH_BINARY_INV)
 
-
         # Morphological Opening 
         kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
         erosion =cv2.erode(thresh, kernel_open, iterations=1)
-         # Crop image: 1% from left/right, 5% from top/bottom
-        h, w = erosion.shape
-        left = int(w * 0.01)
-        right = int(w * 0.99)
-        top = int(h * 0.05)
-        bottom = int(h * 0.95)
-        erosion = erosion[top:bottom, left:right]
+
+       
+
         regNos = "EG_"
         #dived image into 4 equal rows
-        rows = np.vsplit(erosion, 4)
+        rows = np.vsplit(thresh, 4)
         for r in rows:
             cols = np.hsplit(r, 10)
             #get the maximum white pixel box index of columns
             pixelValues = []
             for box in cols:
+                h, w = box.shape
+                left = int(w * 0.2)
+                right = int(w * 0.8)
+                top = int(h * 0.2)
+                bottom = int(h * 0.8)
+                box = box[top:bottom, left:right]
                 totalPixels = cv2.countNonZero(box)
                 print(totalPixels)
                 pixelValues.append(totalPixels)
